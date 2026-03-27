@@ -1,0 +1,399 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Multi-Tenancy ─────────────────────────────────────────────────────────
+
+model Organization {
+  id                   String   @id @default(uuid())
+  name                 String
+  slug                 String?  @unique
+  domain               String?
+  plan                 String   @default("free")
+  maxSystems           Int      @default(3)
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?
+  agentmailInboxId     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  users                User[]
+  aiSystems            AiSystem[]
+  auditLogs            AuditLog[]
+  invitations          Invitation[]
+  apiKeys              ApiKey[]
+  complianceDeadlines  ComplianceDeadline[]
+  githubInstallations  GitHubInstallation[]
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String?
+  image          String?
+  hashedPassword String?
+  emailVerified  DateTime?
+  role           String    @default("admin")
+  organizationId String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessments          Assessment[]
+  documents            Document[]
+  auditLogs            AuditLog[]
+  incidents            Incident[]
+  scanResults          ScanResult[]
+  assignedDeadlines    ComplianceDeadline[]  @relation("DeadlineAssignee")
+  conformityAssessments ConformityAssessment[]
+  sentInvitations      Invitation[]          @relation("InvitedBy")
+  accounts             Account[]
+  sessions             Session[]
+}
+
+// ─── NextAuth Models ────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Core Domain ────────────────────────────────────────────────────────────
+
+model AiSystem {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  sector           String
+  useCase          String
+  provider         String?
+  version          String?
+  dataInputs       String?
+  decisionImpact   String?
+  endUsers         String?
+  deploymentRegion String   @default("EU")
+  riskTier         String   @default("unassessed")
+  complianceStatus String   @default("not_started")
+  complianceScore  Int      @default(0)
+  sourceRepo       String?
+  organizationId   String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessments           Assessment[]
+  documents             Document[]
+  incidents             Incident[]
+  auditLogs             AuditLog[]
+  scanResults           ScanResult[]
+  complianceDeadlines   ComplianceDeadline[]
+  conformityAssessments ConformityAssessment[]
+  passportConfig        PassportConfig?
+  aiBoms                AiBom[]
+}
+
+model Assessment {
+  id                   String   @id @default(uuid())
+  aiSystemId           String
+  assessorId           String
+  type                 String   @default("self_assessment")
+  riskTier             String
+  confidence           Float
+  justification        String
+  keyArticles          String   @default("[]")
+  requirements         String   @default("[]")
+  recommendations      String   @default("[]")
+  exceptionsConsidered String?
+  annexIiiCategory     String?
+  complianceGaps       String?
+  rawResponse          String?
+  createdAt            DateTime @default(now())
+
+  aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  assessor User     @relation(fields: [assessorId], references: [id])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  aiSystemId String
+  authorId   String
+  title      String
+  type       String
+  section    Int      @default(0)
+  version    Int      @default(1)
+  content    String
+  status     String   @default("draft")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id])
+}
+
+model Incident {
+  id            String    @id @default(uuid())
+  aiSystemId    String
+  reporterId    String
+  title         String
+  description   String
+  severity      String    @default("medium")
+  status        String    @default("open")
+  reportedToNca Boolean   @default(false)
+  ncaReportDate DateTime?
+  rootCause     String?
+  remediation   String?
+  occurredAt    DateTime
+  detectedAt    DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  reporter User     @relation(fields: [reporterId], references: [id])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  organizationId String
+  aiSystemId     String?
+  action         String
+  resource       String
+  resourceId     String?
+  details        String?
+  createdAt      DateTime @default(now())
+
+  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  aiSystem     AiSystem?     @relation(fields: [aiSystemId], references: [id])
+}
+
+// ─── GitHub Scanner ─────────────────────────────────────────────────────────
+
+model ScanResult {
+  id             String   @id @default(uuid())
+  repository     String
+  branch         String   @default("main")
+  scanDate       DateTime @default(now())
+  findings       String   @default("[]")
+  totalFindings  Int      @default(0)
+  reviewRequired Int      @default(0)
+  status         String   @default("completed")
+  scannedById    String
+  aiSystemId     String?
+  organizationId String
+
+  scannedBy User      @relation(fields: [scannedById], references: [id])
+  aiSystem  AiSystem? @relation(fields: [aiSystemId], references: [id])
+}
+
+// ─── Compliance Calendar ────────────────────────────────────────────────────
+
+model ComplianceDeadline {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  dueDate        DateTime
+  status         String    @default("pending")
+  priority       String    @default("medium")
+  category       String    @default("general")
+  aiSystemId     String?
+  assigneeId     String?
+  organizationId String
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  aiSystem     AiSystem?    @relation(fields: [aiSystemId], references: [id], onDelete: SetNull)
+  assignee     User?        @relation("DeadlineAssignee", fields: [assigneeId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ─── Conformity Assessment ──────────────────────────────────────────────────
+
+model ConformityAssessment {
+  id              String    @id @default(uuid())
+  aiSystemId      String
+  assessorId      String
+  status          String    @default("in_progress")
+  requirements    String    @default("[]")
+  evidenceUrls    String    @default("[]")
+  completionPct   Int       @default(0)
+  certificateUrl  String?
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  assessor User     @relation(fields: [assessorId], references: [id])
+}
+
+// ─── API Keys ───────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id             String    @id @default(uuid())
+  name           String
+  keyHash        String    @unique
+  keyPrefix      String
+  organizationId String
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ─── Team Invitations ───────────────────────────────────────────────────────
+
+model Invitation {
+  id             String    @id @default(uuid())
+  email          String
+  role           String    @default("editor")
+  token          String    @unique @default(uuid())
+  organizationId String
+  invitedById    String
+  acceptedAt     DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitedBy", fields: [invitedById], references: [id])
+}
+
+// ─── GitHub App Installations (CI/CD Integration) ───────────────────────────
+
+model GitHubInstallation {
+  id              String   @id @default(uuid())
+  installationId  Int      @unique
+  accountLogin    String
+  accountType     String   @default("Organization")
+  organizationId  String
+  repositories    String   @default("[]")
+  webhookSecret   String?
+  policyConfig    String?
+  enforcement     String   @default("warning")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  checkRuns    CiCheckRun[]
+}
+
+model CiCheckRun {
+  id                   String   @id @default(uuid())
+  installationId       String
+  repository           String
+  prNumber             Int
+  headSha              String
+  status               String   @default("pending")
+  conclusion           String?
+  modelsDetected       Int      @default(0)
+  issuesFound          Int      @default(0)
+  detailsUrl           String?
+  findings             String   @default("[]")
+  createdAt            DateTime @default(now())
+  completedAt          DateTime?
+
+  installation GitHubInstallation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+}
+
+// ─── Compliance Passport (Public Trust Pages) ───────────────────────────────
+
+model PassportConfig {
+  id               String   @id @default(uuid())
+  aiSystemId       String   @unique
+  enabled          Boolean  @default(false)
+  visibility       String   @default("public")
+  customSlug       String?  @unique
+  brandColor       String?
+  showScore        Boolean  @default(true)
+  showDocStatus    Boolean  @default(true)
+  showRiskTier     Boolean  @default(true)
+  showIncidents    Boolean  @default(false)
+  gatedFields      String   @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  aiSystem   AiSystem           @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  accessLogs PassportAccessLog[]
+}
+
+model PassportAccessLog {
+  id               String   @id @default(uuid())
+  passportConfigId String
+  visitorIp        String?
+  visitorEmail     String?
+  action           String
+  resourceAccessed String?
+  createdAt        DateTime @default(now())
+
+  passportConfig PassportConfig @relation(fields: [passportConfigId], references: [id], onDelete: Cascade)
+}
+
+// ─── AI Bill of Materials (AI-BOM) ──────────────────────────────────────────
+
+model AiBom {
+  id           String   @id @default(uuid())
+  aiSystemId   String
+  version      String   @default("1.0")
+  generatedAt  DateTime @default(now())
+  sourceType   String   @default("scan")
+  scanResultId String?
+  status       String   @default("draft")
+  updatedAt    DateTime @updatedAt
+
+  aiSystem   AiSystem       @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  components AiBomComponent[]
+}
+
+model AiBomComponent {
+  id            String  @id @default(uuid())
+  bomId         String
+  componentType String
+  name          String
+  version       String?
+  provider      String?
+  license       String?
+  source        String?
+  metadata      String  @default("{}")
+  riskNotes     String?
+
+  bom AiBom @relation(fields: [bomId], references: [id], onDelete: Cascade)
+}
