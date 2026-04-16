@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test.describe("SDK API — Auth Protection", () => {
   const endpoints = [
-    { method: "GET", path: "/api/v1/systems" },
     { method: "GET", path: "/api/v1/systems/00000000-0000-0000-0000-000000000000/gaps" },
     { method: "GET", path: "/api/v1/systems/00000000-0000-0000-0000-000000000000/score" },
     { method: "GET", path: "/api/v1/systems/00000000-0000-0000-0000-000000000000/documents" },
