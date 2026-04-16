@@ -5,16 +5,16 @@
 ```
                     ┌─────────────────────────────────┐
                     │          USERS                   │
-                    │  Compliance Officers, CTOs,        │
-                    │  Legal Teams, Auditors             │
+                    │  Compliance Officers, CTOs,      │
+                    │  Legal Teams, Auditors           │
                     └───────────────┬─────────────────┘
                                     │
           ┌─────────────────────────┼─────────────────────────┐
           │                         │                         │
           ▼                         ▼                         ▼
 ┌─────────────────┐     ┌───────────────────────┐     ┌─────────────────┐
-│  GITHUB APP     │     │   NEXT.JS FRONTEND     │     │ PUBLIC VISITORS │
-│  (repos / PRs)  │     │  (Vercel Edge — EU)    │     │ (trust pages)   │
+│  GITHUB APP     │     │   NEXT.JS FRONTEND    │     │ PUBLIC VISITORS │
+│  (repos / PRs)  │     │  (Vercel — EU)        │     │ (trust pages)   │
 └────────┬────────┘     ├────────────────────────┤     └────────┬────────┘
          │              │  Landing Page          │              │
          │              │  Auth (NextAuth v5     │              │
@@ -23,71 +23,72 @@
          │              │  AI System Inventory   │              │
          │              │  Risk Classifier UI    │              │
          │              │  Document Editor       │              │
-         │              │  Audit Trail / Calendar│              │
-         │              │  Settings & Billing    │              │
+         │              │  Incidents / Deadlines │              │
+         │              │  Audit log / Team /    │              │
+         │              │  API keys / Settings   │              │
          │              │  Public: /trust/...    │              │
          │              └───────────┬────────────┘              │
          │                          │                          │
-         │         Server Actions + Server Components           │
-         │                          │ Route Handlers (JSON)      │
+         │         Route Handlers (JSON) + client components     │
          └──────────────┬───────────┼──────────────────────────┘
                         │           │
                         ▼           ▼
                     ┌───────────────────────────────────┐
                     │         API LAYER                  │
-                    │  Next.js Route Handlers          │
+                    │  Next.js Route Handlers            │
                     ├───────────────────────────────────┤
-                    │  /api/v1/* … API key (org scope) │
-                    │    systems, incidents              │
-                    │    /systems/[id]/classify         │
-                    │    /systems/[id]/gaps             │
-                    │    /systems/[id]/score            │
-                    │    /systems/[id]/documents        │
-                    │    /systems/[id]/evidence         │
-                    │    /systems/[id]/bom (+ /export)  │
-                    │    /systems/[id]/passport         │
-                    │  /api/github/webhook              │
-                    │  /api/github/check-runs/[id]      │
-                    │  /api/passport/[systemId]         │
-                    │  /api/passport/widget.js          │
-                    │  auth, stripe, health, export     │
+                    │  /api/v1/* … API key (org scope)   │
+                    │    systems, incidents, gaps, …     │
+                    │  /api/github/webhook               │
+                    │  /api/github/check-runs/[id]       │
+                    │  /api/passport/[systemId]          │
+                    │  /api/passport/widget.js           │
+                    │  /api/systems, /api/scan, …        │
+                    │  /api/team, /api/api-keys, …       │
+                    │  /api/audit-logs, /api/deadlines   │
+                    │  auth, health, export patterns     │
                     └──┬──────┬──────┬──────┬──────┬────┘
                        │      │      │      │      │
           ┌────────────▼┐ ┌───▼───┐ ┌▼─────┐ ┌▼──────────┐
-          │ OPENROUTER  │ │PRISMA │ │ LRU  │ │ AGENTMAIL │
-          │(NVIDIA/LLM) │ │(Neon) │ │CACHE │ │ (Email)   │
+          │ OPENROUTER  │ │PRISMA │ │ LRU  │ │  EMAIL    │
+          │(NVIDIA LLM) │ │(Neon) │ │CACHE │ │ (planned) │
           ├─────────────┤ ├───────┤ │(proc)│ ├───────────┤
-          │Risk Classify│ │AI Sys │ ├──────┤ │Compliance │
-          │Doc Generate │ │Assess │ │Rate  │ │ Alerts    │
-          │Gap Analysis │ │Docs   │ │limit │ │Incident   │
-          │policy-engine│ │Audit  │ │(in-  │ │ Notify    │
-          │+ ai-bom     │ │BOM /  │ │proc) │ │Report     │
-          │  (CycloneDX)│ │Passport│ └──────┘ │ Delivery  │
-          └─────────────┘ │GitHub │          └───────────┘
+          │Risk Classify│ │AI Sys │ ├──────┤ │Notify,    │
+          │Doc Generate │ │Assess │ │Rate  │ │invites    │
+          │Gap Analysis │ │Docs   │ │limit │ │(future)   │
+          │policy-engine│ │Audit  │ │      │ │           │
+          │+ ai-bom     │ │BOM /  │ └──────┘ └───────────┘
+          │  (CycloneDX)│ │Passport│
+          └─────────────┘ │GitHub │
                           │CI runs│
                           │Users  │
                           │Org +  │
-                          │ slug  │
+                          │invites│
                           └───┬───┘
                               │
                    ┌──────────▼──────────────────────┐
                    │     POSTGRESQL (Neon)            │
                    ├──────────────────────────────────┤
-                   │  organizations (+ slug)          │
-                   │  users, sessions (NextAuth)      │
-                   │  ai_systems                      │
-                   │  assessments                     │
-                   │  documents                       │
-                   │  incidents                       │
-                   │  audit_logs (append-only)        │
-                   │  compliance_deadlines            │
-                   │  github_installations            │
-                   │  ci_check_runs                   │
-                   │  passport_config                 │
-                   │  passport_access_logs            │
-                   │  ai_boms, ai_bom_components      │
+                   │  organizations (+ slug, Stripe   │
+                   │    IDs scaffolded, unused)       │
+                   │  users, sessions (NextAuth)       │
+                   │  invitations                      │
+                   │  api_keys                         │
+                   │  ai_systems                       │
+                   │  assessments, documents           │
+                   │  incidents                        │
+                   │  audit_logs (append-only)         │
+                   │  compliance_deadlines             │
+                   │  github_installations             │
+                   │  ci_check_runs                    │
+                   │  passport_config / access_logs    │
+                   │  ai_boms, ai_bom_components       │
                    └──────────────────────────────────┘
 ```
+
+## Product surfaces (dashboard)
+
+Working areas in the authenticated app include: **Command Center**, **AI Inventory**, **GitHub Scanner**, **Compliance Tracker**, **Incidents**, **Deadlines**, **Audit log viewer**, **Reports**, **Team management** (invitations and roles), **API key management** with **organization settings**, and **user settings**.
 
 ## CI/CD, public trust, and AI-BOM
 
@@ -101,26 +102,26 @@
 
 ```
 1. User adds AI system to inventory
-   └→ Server Action (or authenticated UI flow)
+   └→ Authenticated UI → POST /api/systems (or equivalent flow)
       └→ Prisma: INSERT ai_systems
       └→ Prisma: INSERT audit_logs
 
 2. User requests risk classification
-   └→ Server Action / internal service
+   └→ Route handler / internal flow
       └→ OpenRouter API: classifyAiSystem(systemMetadata)
-         └→ NVIDIA Llama model returns: { riskTier, confidence, justification, ... }
+         └→ NVIDIA Llama-class model returns: { riskTier, confidence, justification, ... }
       └→ Prisma: INSERT assessments
       └→ Prisma: UPDATE ai_systems SET risk_tier
       └→ Prisma: INSERT audit_logs
-      └→ AgentMail: Send classification notification (if configured)
 
 3. System generates Annex IV documentation
-   └→ Server Action / document pipeline
+   └→ Document pipeline
       └→ OpenRouter API: generateDocumentSection() × sections
       └→ Prisma: INSERT documents (per section)
       └→ Prisma: INSERT audit_logs
-      └→ AgentMail: Send report ready notification
 ```
+
+Email notifications for these events are **planned**, not implemented in application code today.
 
 ## Data Flow: External integrations (summary)
 
@@ -129,6 +130,7 @@ GitHub push / PR
    └→ POST /api/github/webhook
       └→ policy-engine: load policy YAML, evaluate repo / manifest signals
       └→ Prisma: upsert GitHubInstallation, create/update CiCheckRun
+      (work runs inline in the serverless request; no separate job worker)
 
 API consumers (SDK / automation)
    └→ GET|POST /api/v1/systems/... (Bearer API key)
@@ -148,9 +150,9 @@ Embeddable passport
 │                                                   │
 │  1. NETWORK                                       │
 │     ├─ HTTPS enforced (TLS 1.3)                  │
-│     ├─ CSP headers                               │
+│     ├─ CSP headers                                 │
 │     ├─ CORS restricted to app domain             │
-│     └─ Rate limiting (lru-cache, in-process)    │
+│     └─ Rate limiting (lru-cache, in-process)     │
 │                                                   │
 │  2. AUTHENTICATION                                │
 │     ├─ NextAuth v5 (Credentials provider)       │
@@ -158,23 +160,30 @@ Embeddable passport
 │     └─ Prisma adapter for user/account storage   │
 │                                                   │
 │  3. AUTHORIZATION                                 │
-│     ├─ RBAC: Admin > CO > Auditor > Viewer       │
-│     ├─ Organization-scoped data isolation         │
+│     ├─ Role-based access on admin operations      │
+│     │   (destructive deletes, org settings,      │
+│     │    API keys, team invites / role changes)  │
+│     ├─ Organization-scoped data isolation        │
 │     ├─ Public routes: passport trust + widget    │
-│     │   (no login; visibility gated in config)    │
-│     └─ Feature gating by subscription plan        │
+│     │   (no login; visibility gated in config)   │
+│     └─ Subscription / plan gating: schema-ready;   │
+│         enforcement is not fully productized yet   │
 │                                                   │
 │  4. DATA PROTECTION                               │
-│     ├─ PII encrypted at rest (AES-256)           │
+│     ├─ Database encryption at rest: provider      │
+│     │   (e.g. Neon) responsibility; app-level      │
+│     │   field encryption for PII is not implemented│
 │     ├─ Parameterized queries (Prisma)            │
-│     ├─ Input validation (Zod schemas)            │
+│     ├─ Zod validation on critical endpoints      │
+│     │   (register, system create, scan, …)        │
 │     └─ EU-region hosting (GDPR)                  │
 │                                                   │
 │  5. AUDIT                                         │
-│     ├─ Append-only audit logs                    │
-│     ├─ 10-year retention (Art. 12)               │
-│     ├─ Tamper-evident logging                    │
-│     └─ All AI API calls logged                   │
+│     ├─ Append-only audit log records             │
+│     ├─ Audit log retention: configurable;         │
+│     │   default: no automatic purge in app code   │
+│     └─ AI provider calls can be reflected in      │
+│         assessments / documents as configured       │
 │                                                   │
 └──────────────────────────────────────────────────┘
 ```
@@ -192,7 +201,7 @@ Embeddable passport
 │  ┌──────▼────────────────▼──────┐                │
 │  │        Serverless Functions    │                │
 │  │  (Route handlers, OpenRouter)  │                │
-│  └───────────────┬───────────────┘                │
+│  └───────────────┬──────────────┘                │
 └──────────────────┼───────────────────────────────┘
                    │
      ┌─────────────┼────────────────────┐
@@ -204,17 +213,23 @@ Embeddable passport
 └─────────┘  └──────────┘  └────────────┘
 ```
 
+**Background jobs:** not yet implemented; GitHub webhooks, scans, and similar work are handled **inline** in route handlers (no BullMQ or Redis queue in this repository).
+
+**Billing:** **planned** — `Organization` includes Stripe-related columns as a **schema scaffold**; there is no live Stripe checkout or webhook integration in the app code paths today.
+
+**Email:** **planned** — invitation links can be copied from the dashboard; outbound transactional email (invites, alerts) is not wired to a provider in code.
+
 ## Key Design Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Frontend | Next.js 14.2.5 App Router | SSR for SEO, server components for performance, API routes colocation |
-| Mutations & server logic | Server Actions + Route Handlers | First-class App Router pattern; JSON APIs for integrations |
+| Frontend | Next.js 14.2.5 App Router | SSR for SEO, server components where used, API routes colocation |
+| Mutations & server logic | Route Handlers + client fetch | JSON APIs for integrations; forms call `/api/*` routes |
 | Database | Neon PostgreSQL | Serverless, EU regions, branching for dev/staging |
 | ORM | Prisma | Type-safe queries, migration management, schema-first |
 | AI | OpenRouter (NVIDIA Llama-class models) | Multi-model routing, structured JSON output, EU AI Act compliance classification |
 | Auth | NextAuth v5 (Credentials + JWT) | Email/password auth + Prisma adapter; JWT sessions for stateless request validation |
-| Email | AgentMail | API-first, SOC2 certified, attachment support |
+| Email | Planned | Transactional email not integrated in application code yet |
 | Hosting | Vercel EU | Edge network, EU data residency, zero-config deployment |
 | Rate limiting / hot cache | lru-cache (in-process) | No Redis dependency per instance; suitable for serverless limits |
 
@@ -236,6 +251,11 @@ Embeddable passport
 | GitHub webhook | `src/app/api/github/webhook/route.ts` |
 | Check run detail | `src/app/api/github/check-runs/[id]/route.ts` |
 | v1 system extensions | `src/app/api/v1/systems/[id]/gaps/route.ts`, `.../score/`, `.../documents/`, `.../evidence/`, `.../bom/`, `.../bom/export/`, `.../passport/` |
+| Team (session) | `src/app/api/team/route.ts`, `.../invite/route.ts`, `.../[id]/route.ts` |
+| API keys (session) | `src/app/api/api-keys/route.ts` |
+| Audit logs | `src/app/api/audit-logs/route.ts` |
+| Deadlines | `src/app/api/deadlines/route.ts`, `.../[id]/route.ts` |
+| Incidents | `src/app/api/incidents/route.ts`, `.../[id]/route.ts` |
 | Public layout | `src/app/(public)/layout.tsx` |
 | Trust page | `src/app/(public)/trust/[orgSlug]/[systemId]/page.tsx` |
 | Passport JSON / widget | `src/app/api/passport/[systemId]/route.ts`, `src/app/api/passport/widget.js/route.ts` |

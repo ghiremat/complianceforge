@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/server/db";
 import { scanRepositoryWithAI } from "@/lib/ai-provider";
@@ -9,6 +10,14 @@ import {
 } from "@/lib/github-scanner";
 
 export const runtime = "nodejs";
+
+const scanSchema = z.object({
+  repoUrl: z
+    .string()
+    .url("Invalid URL")
+    .refine((url) => url.includes("github.com"), "Must be a GitHub URL"),
+  systemId: z.string().optional(),
+});
 
 const GH_HEADERS = {
   Accept: "application/vnd.github+json",
@@ -227,28 +236,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { repoUrl?: string; systemId?: string };
+  let rawBody: unknown;
   try {
-    body = (await request.json()) as { repoUrl?: string; systemId?: string };
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const repoUrl = typeof body.repoUrl === "string" ? body.repoUrl.trim() : "";
-  if (!repoUrl) {
-    return NextResponse.json({ error: "repoUrl is required" }, { status: 400 });
+  const validated = scanSchema.safeParse(rawBody);
+  if (!validated.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: validated.error.flatten().fieldErrors },
+      { status: 400 }
+    );
   }
 
-  const parsed = parseGithubRepoUrl(repoUrl);
-  if (!parsed) {
+  const repoUrl = validated.data.repoUrl.trim();
+  const parsedRepo = parseGithubRepoUrl(repoUrl);
+  if (!parsedRepo) {
     return NextResponse.json(
       { error: "Invalid GitHub repository URL (expected https://github.com/owner/repo)" },
       { status: 400 }
     );
   }
 
-  const { owner, repo } = parsed;
-  const systemId = typeof body.systemId === "string" ? body.systemId.trim() : undefined;
+  const { owner, repo } = parsedRepo;
+  const systemId = validated.data.systemId?.trim() || undefined;
 
   if (systemId) {
     const sys = await db.aiSystem.findFirst({

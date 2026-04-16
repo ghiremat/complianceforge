@@ -130,14 +130,15 @@ async function main() {
 
   const apiKeyRaw = "cf_demo_key_12345";
   const keyHash = createHash("sha256").update(apiKeyRaw, "utf8").digest("hex");
+  const keyPrefix = apiKeyRaw.slice(0, 12);
 
   await prisma.apiKey.upsert({
     where: { keyHash },
-    update: {},
+    update: { keyPrefix },
     create: {
       name: "Demo API Key",
       keyHash,
-      keyPrefix: "cf_demo_",
+      keyPrefix,
       organizationId: org.id,
     },
   });

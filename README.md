@@ -23,26 +23,50 @@
 - **Every organization** shipping or operating AI in the EU needs **repeatable** classification, documentation, evidence, and monitoring — not one-off consultant PDFs.
 - **ComplianceForge** automates the heavy lifting: inventory, risk tiering, gaps, evidence, CI checks, and **public trust** surfaces your customers and auditors can actually use.
 
-## Key features
+## Implemented today (working in the app)
 
-1. **AI risk classification** — Automated EU AI Act risk tier assessment powered by AI (OpenRouter / NVIDIA Llama-class models).
-2. **CI/CD integration** — GitHub App that runs compliance checks on every PR (think *Snyk*, but for AI compliance signals and policy-as-code).
-3. **Compliance-as-code SDK** — Versioned **REST API** with **API key** auth so ML and platform teams can wire compliance into pipelines.
+- **AI risk classification** — EU AI Act–oriented risk tiering via **OpenRouter** (default: **NVIDIA Llama**-class models).
+- **AI system inventory** — Org-scoped systems with assessments, documents, and compliance metadata.
+- **GitHub App + policy engine** — Webhook-driven checks; `complianceforge.yml` evaluated on PRs; `CiCheckRun` records.
+- **Compliance tracker, reports, calendar / deadlines** — Dashboard tabs backed by Prisma models and `/api/*` routes.
+- **Incidents** — Log and track incidents per AI system.
+- **Audit log viewer** — Read org audit trail from `AuditLog`.
+- **API key management** — Create and revoke org API keys for `/api/v1` (hashed at rest).
+- **Organization settings** — Org name/slug and related settings for admins.
+- **Team management** — List members, invite flow (link-based; copy invite URL), role updates and removal for admins.
+- **Compliance Passport** — Public trust routes and `/api/passport/*` for JSON + embeddable widget.
+- **AI-BOM** — Bill of materials CRUD and CycloneDX-oriented export under `/api/v1`.
+- **Auth** — NextAuth v5 credentials + JWT; Prisma user/org storage.
+
+## Planned or schema-only (not fully productized)
+
+- **Billing / Stripe** — `Organization` includes Stripe customer/subscription IDs; no live Stripe integration in route handlers yet.
+- **Outbound email** — No transactional provider wired for invites, alerts, or “report ready” notifications (invites use manual link copy).
+- **Invite acceptance UX** — Invitations are stored and links use a `?invite=` URL pattern; full sign-up redemption flow may still need product work.
+- **Background job queue** — No BullMQ/Redis; long work runs inline in serverless handlers.
+- **Distributed rate limiting** — In-process LRU cache per instance; no shared Redis layer.
+
+## Key features (roadmap + positioning)
+
+1. **AI risk classification** — Automated EU AI Act risk tier assessment (OpenRouter / NVIDIA Llama-class models).
+2. **CI/CD integration** — GitHub App that runs compliance checks on PRs (*policy-as-code* alongside your repo).
+3. **Compliance-as-code SDK** — REST under `/api/v1` with **API key** auth for pipelines and automation.
 4. **Compliance Passport** — **Public trust pages** plus an **embeddable widget** so compliance status can travel with your product.
-5. **AI-BOM (Bill of Materials)** — **CycloneDX 1.5**-oriented transparency for models, dependencies, and supply-chain posture.
-6. **Policy engine** — Repo-level **`complianceforge.yml`** evaluated in CI alongside your code.
-7. **Compliance scoring** — **EU AI Act maturity score (0–100)** aligned with **Annex IV**-style documentation and evidence expectations.
+5. **AI-BOM (Bill of Materials)** — **CycloneDX 1.5**-oriented transparency for models and supply-chain posture.
+6. **Policy engine** — Repo-level **`complianceforge.yml`** evaluated in CI.
+7. **Compliance scoring** — **EU AI Act maturity score (0–100)** aligned with Annex IV–style documentation and evidence expectations.
 
 ## Tech stack
 
 | Layer | Choices |
 |--------|---------|
-| **App** | Next.js **14** (App Router), React **18**, TypeScript |
+| **App** | Next.js **14.2** (App Router), React **18**, TypeScript |
 | **Data** | Prisma ORM, **PostgreSQL** (e.g. Neon) |
 | **Auth** | **NextAuth v5** — Credentials provider + **JWT** sessions |
-| **UI** | Tailwind CSS, **shadcn/ui**, Recharts |
+| **UI** | Tailwind CSS, **shadcn/ui**, Recharts, **Sonner** toasts |
 | **AI** | **OpenRouter** (default: **NVIDIA Llama** family models) |
-| **Quality** | **Playwright** E2E tests |
+| **Validation** | **Zod** on critical HTTP endpoints (e.g. register, system create, scan) — not every handler |
+| **Quality** | **Playwright** E2E tests, **Vitest** for unit tests |
 
 ## Quick start
 

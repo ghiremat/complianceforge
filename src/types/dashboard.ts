@@ -29,6 +29,7 @@ export interface CalendarItem {
   days_left: number
   priority: string
   status: string
+  category?: string
 }
 
 export interface ScanResultData {

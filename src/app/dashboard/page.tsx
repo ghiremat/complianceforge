@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Settings as SettingsIcon } from 'lucide-react'
+import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Settings as SettingsIcon, AlertTriangle, ClipboardList, Users } from 'lucide-react'
 import { cn, daysUntil } from '@/lib/utils'
 import type { StatsData, SystemData, CalendarItem } from '@/src/types/dashboard'
 import { CommandCenter } from '@/src/components/dashboard/command-center'
@@ -11,8 +11,11 @@ import { AiInventory } from '@/src/components/dashboard/ai-inventory'
 import { GitHubScanner } from '@/src/components/dashboard/github-scanner'
 import { ComplianceTracker } from '@/src/components/dashboard/compliance-tracker'
 import { Deadlines } from '@/src/components/dashboard/deadlines'
+import { Incidents } from '@/src/components/dashboard/incidents'
+import { AuditLog } from '@/src/components/dashboard/audit-log'
 import { Reports } from '@/src/components/dashboard/reports'
 import { Settings } from '@/src/components/dashboard/settings'
+import { Team } from '@/src/components/dashboard/team'
 
 const ENFORCEMENT_DATE = '2026-08-02'
 const TABS = [
@@ -20,15 +23,27 @@ const TABS = [
   { id: 'inventory', label: 'AI Inventory', icon: Server },
   { id: 'scanner', label: 'GitHub Scanner', icon: GitBranch },
   { id: 'tracker', label: 'Compliance Tracker', icon: CheckSquare },
+  { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
   { id: 'calendar', label: 'Deadlines', icon: Calendar },
+  { id: 'audit', label: 'Audit Log', icon: ClipboardList },
   { id: 'reports', label: 'Reports', icon: FileText },
+  { id: 'team', label: 'Team', icon: Users },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ] as const
 
-export default function Dashboard() {
+type TabId = (typeof TABS)[number]['id']
+
+function parseTabParam(tab: string | null): TabId {
+  const id = (tab || 'command') as TabId
+  return TABS.some((t) => t.id === id) ? id : 'command'
+}
+
+function DashboardInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = parseTabParam(searchParams.get('tab'))
+
   const { data: session, status } = useSession()
-  const [activeTab, setActiveTab] = useState('command')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const user = session?.user ? { email: session.user.email ?? '', name: session.user.name ?? '' } : null
@@ -39,6 +54,13 @@ export default function Dashboard() {
   const [statsLoading, setStatsLoading] = useState(true)
   const [systemsLoading, setSystemsLoading] = useState(true)
   const [calendarLoading, setCalendarLoading] = useState(true)
+
+  const setTab = useCallback(
+    (tabId: TabId) => {
+      router.replace(`/dashboard?tab=${tabId}`, { scroll: false })
+    },
+    [router]
+  )
 
   const loadStats = useCallback(async () => {
     try {
@@ -112,7 +134,7 @@ export default function Dashboard() {
               key={id}
               type="button"
               onClick={() => {
-                setActiveTab(id)
+                setTab(id)
                 setSidebarOpen(false)
               }}
               className={cn(
@@ -192,11 +214,35 @@ export default function Dashboard() {
           )}
           {activeTab === 'scanner' && <GitHubScanner systems={systems} />}
           {activeTab === 'tracker' && <ComplianceTracker systems={systems} />}
-          {activeTab === 'calendar' && <Deadlines calendar={calendar} loading={calendarLoading} />}
+          {activeTab === 'incidents' && <Incidents systems={systems} />}
+          {activeTab === 'calendar' && (
+            <Deadlines calendar={calendar} loading={calendarLoading} onRefresh={loadCalendar} />
+          )}
+          {activeTab === 'audit' && <AuditLog />}
           {activeTab === 'reports' && <Reports systems={systems} />}
+          {activeTab === 'team' && <Team />}
           {activeTab === 'settings' && <Settings />}
         </main>
       </div>
     </div>
+  )
+}
+
+function DashboardFallback() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] text-slate-400 flex items-center justify-center">
+      <div className="flex items-center gap-3 text-sm">
+        <span className="h-5 w-5 motion-safe:animate-spin rounded-full border-2 border-slate-600 border-t-indigo-500" />
+        Loading dashboard…
+      </div>
+    </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<DashboardFallback />}>
+      <DashboardInner />
+    </Suspense>
   )
 }

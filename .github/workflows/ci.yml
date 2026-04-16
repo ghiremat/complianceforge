@@ -19,6 +19,8 @@ jobs:
       - run: npx prisma generate
       - run: npm run lint
       - run: npx tsc --noEmit
+      - name: Run unit tests
+        run: npm run test
 
   e2e:
     runs-on: ubuntu-latest

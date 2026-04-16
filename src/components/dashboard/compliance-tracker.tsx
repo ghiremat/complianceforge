@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CheckSquare, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, scoreColor, scoreBarColor } from '@/lib/utils'
@@ -13,6 +13,7 @@ interface TrackerItem {
   article_title: string
   status: string
   requirement: string
+  evidence?: string
 }
 
 export interface ComplianceTrackerProps {
@@ -32,11 +33,60 @@ function buildComplianceItems(system: SystemData): TrackerItem[] {
 export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
   const [selectedSystemId, setSelectedSystemId] = useState<string | null>(null)
   const [expandedItem, setExpandedItem] = useState<number | null>(null)
+  const [complianceItems, setComplianceItems] = useState<TrackerItem[]>([])
   const [itemUpdates, setItemUpdates] = useState<Record<number, { status: string; evidence: string }>>({})
   const [saving, setSaving] = useState<number | null>(null)
 
   const selectedSystem = systems.find((s) => s.id === selectedSystemId) ?? null
-  const complianceItems = selectedSystem ? buildComplianceItems(selectedSystem) : []
+
+  useEffect(() => {
+    if (!selectedSystemId) {
+      setComplianceItems([])
+      return
+    }
+    const sys = systems.find((s) => s.id === selectedSystemId)
+    if (!sys) {
+      setComplianceItems([])
+      return
+    }
+
+    const id = selectedSystemId
+    setComplianceItems(buildComplianceItems(sys))
+    setItemUpdates({})
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/systems/${id}/compliance-items`)
+        if (!res.ok || cancelled) return
+        const saved = (await res.json()) as Array<{
+          section: number | null
+          status: string
+          content: string | null
+          updatedAt: string
+        }>
+        setComplianceItems((prev) =>
+          prev.map((item) => {
+            const match = saved.find((s) => s.section === item.id)
+            if (match) {
+              return {
+                ...item,
+                status: match.status,
+                evidence: match.content?.trim() ? match.content : item.evidence,
+              }
+            }
+            return item
+          })
+        )
+      } catch {
+        /* hydration is best-effort */
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedSystemId, systems])
 
   async function saveComplianceItem(itemId: number) {
     if (!selectedSystemId) return
@@ -182,7 +232,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Evidence / Notes</label>
                       <textarea
-                        value={itemUpdates[item.id]?.evidence ?? ''}
+                        value={itemUpdates[item.id]?.evidence ?? item.evidence ?? ''}
                         onChange={(e) =>
                           setItemUpdates((u) => ({
                             ...u,

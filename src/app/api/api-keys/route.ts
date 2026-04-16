@@ -29,6 +29,9 @@ export async function POST(request: Request) {
   if (!session?.user?.organizationId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.user.role !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
 
   const body = (await request.json()) as { name?: string };
   const name = body.name?.trim() || "API Key";
@@ -53,6 +56,9 @@ export async function DELETE(request: Request) {
   const session = await auth();
   if (!session?.user?.organizationId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.user.role !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);

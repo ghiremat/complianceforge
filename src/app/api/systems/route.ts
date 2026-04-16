@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/server/db";
+
+const createSystemSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(200),
+  description: z.string().max(2000).optional(),
+  use_case: z.string().max(500).optional(),
+  sector: z.string().max(200).optional(),
+});
 
 export async function GET() {
   const session = await auth();
@@ -37,18 +45,26 @@ export async function POST(request: Request) {
   if (!session?.user?.organizationId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const body = await request.json();
-  const { name, description, use_case, sector } = body as {
-    name?: string;
-    description?: string;
-    use_case?: string;
-    sector?: string;
-  };
-
-  if (!name?.trim()) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (session.user.role !== "admin" && session.user.role !== "member") {
+    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = createSystemSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  const { name, description, use_case, sector } = parsed.data;
 
   const org = await db.organization.findUnique({
     where: { id: session.user.organizationId },

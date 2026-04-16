@@ -3,9 +3,31 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
-import { Shield, ArrowLeft, RefreshCw, ExternalLink, FileText, AlertTriangle, GitBranch } from 'lucide-react'
+import {
+  Shield,
+  ArrowLeft,
+  RefreshCw,
+  ExternalLink,
+  FileText,
+  AlertTriangle,
+  GitBranch,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 import { cn, scoreColor, riskBadgeColor, scoreBarColor } from '@/lib/utils'
+import { Button } from '@/src/components/ui/button'
+import { Input } from '@/src/components/ui/input'
+import { Textarea } from '@/src/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/src/components/ui/dialog'
 
 interface ScoreCriterion {
   id: string
@@ -108,12 +130,27 @@ export default function SystemDetailPage() {
   const router = useRouter()
   const params = useParams()
   const id = typeof params.id === 'string' ? params.id : params.id?.[0] ?? ''
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
 
   const [detail, setDetail] = useState<SystemDetail | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<TabId>('overview')
   const [classifying, setClassifying] = useState(false)
+
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editSector, setEditSector] = useState('')
+  const [editUseCase, setEditUseCase] = useState('')
+  const [editProvider, setEditProvider] = useState('')
+  const [editVersion, setEditVersion] = useState('')
+  const [editDeploymentRegion, setEditDeploymentRegion] = useState('')
+  const [editSourceRepo, setEditSourceRepo] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     router.prefetch('/dashboard')
@@ -149,6 +186,78 @@ export default function SystemDetailPage() {
       cancelled = true
     }
   }, [id])
+
+  function beginEdit() {
+    if (!detail) return
+    setEditName(detail.name)
+    setEditDescription(detail.description ?? '')
+    setEditSector(detail.sector)
+    setEditUseCase(detail.useCase)
+    setEditProvider(detail.provider ?? '')
+    setEditVersion(detail.version ?? '')
+    setEditDeploymentRegion(detail.deploymentRegion)
+    setEditSourceRepo(detail.sourceRepo ?? '')
+    setEditing(true)
+    setTab('overview')
+  }
+
+  function cancelEdit() {
+    setEditing(false)
+  }
+
+  async function saveEdit() {
+    if (!id) return
+    setSaving(true)
+    try {
+      const r = await fetch(`/api/systems/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName.trim() || undefined,
+          description: editDescription,
+          sector: editSector.trim() || undefined,
+          useCase: editUseCase.trim() || undefined,
+          provider: editProvider,
+          version: editVersion,
+          deploymentRegion: editDeploymentRegion,
+          sourceRepo: editSourceRepo,
+        }),
+      })
+      const body = (await r.json().catch(() => ({}))) as { error?: string }
+      if (!r.ok) {
+        toast.error(body.error ?? 'Failed to save')
+        return
+      }
+      toast.success('System updated')
+      setEditing(false)
+      const refresh = await fetch(`/api/systems/${id}`)
+      if (refresh.ok) setDetail((await refresh.json()) as SystemDetail)
+    } catch {
+      toast.error('Failed to save system')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function confirmDelete() {
+    if (!id) return
+    setDeleting(true)
+    try {
+      const r = await fetch(`/api/systems/${id}`, { method: 'DELETE' })
+      const body = (await r.json().catch(() => ({}))) as { error?: string }
+      if (!r.ok) {
+        toast.error(body.error ?? 'Delete failed')
+        return
+      }
+      toast.success('System deleted')
+      setDeleteOpen(false)
+      router.push('/dashboard?tab=inventory')
+    } catch {
+      toast.error('Failed to delete system')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   async function classify() {
     if (!id) return
@@ -258,7 +367,16 @@ export default function SystemDetailPage() {
                 </div>
                 <div className="min-w-0 flex-1 text-center sm:text-left">
                   <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                    <h1 className="text-2xl font-bold tracking-tight text-white">{detail.name}</h1>
+                    {editing ? (
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="max-w-md border-slate-600 bg-slate-950 text-2xl font-bold tracking-tight text-white"
+                        aria-label="System name"
+                      />
+                    ) : (
+                      <h1 className="text-2xl font-bold tracking-tight text-white">{detail.name}</h1>
+                    )}
                     <span
                       className={cn(
                         'rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize',
@@ -290,6 +408,51 @@ export default function SystemDetailPage() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
+                <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
+                  {!editing ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 rounded-xl border-slate-600 bg-slate-800 text-white hover:bg-slate-700"
+                      onClick={() => beginEdit()}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white"
+                        onClick={() => cancelEdit()}
+                        disabled={saving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        className="gap-2 rounded-xl bg-emerald-600 px-4 text-white hover:bg-emerald-500"
+                        onClick={() => void saveEdit()}
+                        disabled={saving}
+                      >
+                        {saving ? 'Saving…' : 'Save'}
+                      </Button>
+                    </>
+                  )}
+                  {isAdmin ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 rounded-xl border-red-900/60 bg-red-950/30 text-red-300 hover:bg-red-950/50"
+                      onClick={() => setDeleteOpen(true)}
+                      disabled={editing}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => void classify()}
@@ -351,22 +514,55 @@ export default function SystemDetailPage() {
                     <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Description
                     </h3>
-                    <p className="text-slate-300">{detail.description?.trim() || '—'}</p>
+                    {editing ? (
+                      <Textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        rows={4}
+                        className="border-slate-700 bg-slate-950 text-slate-200"
+                      />
+                    ) : (
+                      <p className="text-slate-300">{detail.description?.trim() || '—'}</p>
+                    )}
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Sector</h3>
-                      <p className="text-slate-200">{detail.sector || '—'}</p>
+                      {editing ? (
+                        <Input
+                          value={editSector}
+                          onChange={(e) => setEditSector(e.target.value)}
+                          className="border-slate-700 bg-slate-950 text-slate-200"
+                        />
+                      ) : (
+                        <p className="text-slate-200">{detail.sector || '—'}</p>
+                      )}
                     </div>
                     <div>
                       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Use case</h3>
-                      <p className="text-slate-200">{detail.useCase || '—'}</p>
+                      {editing ? (
+                        <Input
+                          value={editUseCase}
+                          onChange={(e) => setEditUseCase(e.target.value)}
+                          className="border-slate-700 bg-slate-950 text-slate-200"
+                        />
+                      ) : (
+                        <p className="text-slate-200">{detail.useCase || '—'}</p>
+                      )}
                     </div>
                     <div>
                       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
                         Deployment region
                       </h3>
-                      <p className="text-slate-200">{detail.deploymentRegion || '—'}</p>
+                      {editing ? (
+                        <Input
+                          value={editDeploymentRegion}
+                          onChange={(e) => setEditDeploymentRegion(e.target.value)}
+                          className="border-slate-700 bg-slate-950 text-slate-200"
+                        />
+                      ) : (
+                        <p className="text-slate-200">{detail.deploymentRegion || '—'}</p>
+                      )}
                     </div>
                     <div>
                       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</h3>
@@ -374,25 +570,48 @@ export default function SystemDetailPage() {
                         {String(detail.complianceStatus || '').replace(/_/g, ' ') || '—'}
                       </p>
                     </div>
-                    {detail.provider ? (
-                      <div>
-                        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Provider
-                        </h3>
+                    <div>
+                      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Provider</h3>
+                      {editing ? (
+                        <Input
+                          value={editProvider}
+                          onChange={(e) => setEditProvider(e.target.value)}
+                          className="border-slate-700 bg-slate-950 text-slate-200"
+                          placeholder="—"
+                        />
+                      ) : detail.provider ? (
                         <p className="text-slate-200">{detail.provider}</p>
-                      </div>
-                    ) : null}
-                    {detail.version ? (
-                      <div>
-                        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Version</h3>
+                      ) : (
+                        <p className="text-slate-200">—</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Version</h3>
+                      {editing ? (
+                        <Input
+                          value={editVersion}
+                          onChange={(e) => setEditVersion(e.target.value)}
+                          className="border-slate-700 bg-slate-950 text-slate-200"
+                          placeholder="—"
+                        />
+                      ) : detail.version ? (
                         <p className="text-slate-200">{detail.version}</p>
-                      </div>
-                    ) : null}
-                    {detail.sourceRepo ? (
-                      <div className="sm:col-span-2">
-                        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Source repo
-                        </h3>
+                      ) : (
+                        <p className="text-slate-200">—</p>
+                      )}
+                    </div>
+                    <div className="sm:col-span-2">
+                      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Source repo
+                      </h3>
+                      {editing ? (
+                        <Input
+                          value={editSourceRepo}
+                          onChange={(e) => setEditSourceRepo(e.target.value)}
+                          className="border-slate-700 bg-slate-950 text-slate-200"
+                          placeholder="https://…"
+                        />
+                      ) : detail.sourceRepo ? (
                         <a
                           href={detail.sourceRepo}
                           target="_blank"
@@ -402,8 +621,10 @@ export default function SystemDetailPage() {
                           <GitBranch className="h-3.5 w-3.5" />
                           {detail.sourceRepo}
                         </a>
-                      </div>
-                    ) : null}
+                      ) : (
+                        <p className="text-slate-200">—</p>
+                      )}
+                    </div>
                   </div>
                   <div className="grid gap-2 border-t border-slate-800 pt-4 sm:grid-cols-2">
                     <p className="text-slate-500">
@@ -570,6 +791,37 @@ export default function SystemDetailPage() {
           </>
         )}
       </main>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">Delete this system?</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              {detail
+                ? `“${detail.name}” will be permanently removed. Assessments and related records may be deleted. This cannot be undone.`
+                : 'This system will be permanently removed.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-slate-400 hover:text-white"
+              onClick={() => setDeleteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="bg-red-600 text-white hover:bg-red-500"
+              disabled={deleting}
+              onClick={() => void confirmDelete()}
+            >
+              {deleting ? 'Deleting…' : 'Delete system'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

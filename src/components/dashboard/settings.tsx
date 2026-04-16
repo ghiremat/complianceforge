@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Key, Plus, Trash2, Copy, Eye, EyeOff } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { Building2, Key, Plus, Trash2, Copy, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/src/components/ui/button'
@@ -38,6 +39,15 @@ type CreateKeyResponse = {
   key: string
 }
 
+type OrgSettingsResponse = {
+  id: string
+  name: string
+  slug: string | null
+  plan: string
+  maxSystems: number
+  _count: { aiSystems: number; users: number }
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
   try {
@@ -51,6 +61,15 @@ function formatDate(iso: string | null): string {
 }
 
 export function Settings() {
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
+
+  const [org, setOrg] = useState<OrgSettingsResponse | null>(null)
+  const [orgLoading, setOrgLoading] = useState(true)
+  const [orgName, setOrgName] = useState('')
+  const [orgSlug, setOrgSlug] = useState('')
+  const [orgSaving, setOrgSaving] = useState(false)
+
   const [keys, setKeys] = useState<ApiKeyRow[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
@@ -60,6 +79,26 @@ export function Settings() {
   const [showFullKey, setShowFullKey] = useState(true)
   const [revokeTarget, setRevokeTarget] = useState<ApiKeyRow | null>(null)
   const [revoking, setRevoking] = useState(false)
+
+  const loadOrg = useCallback(async () => {
+    setOrgLoading(true)
+    try {
+      const r = await fetch('/api/organizations/settings')
+      if (!r.ok) {
+        const err = (await r.json()) as { error?: string }
+        throw new Error(err.error ?? 'Failed to load organization')
+      }
+      const data = (await r.json()) as OrgSettingsResponse
+      setOrg(data)
+      setOrgName(data.name)
+      setOrgSlug(data.slug ?? '')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to load organization')
+      setOrg(null)
+    } finally {
+      setOrgLoading(false)
+    }
+  }, [])
 
   const loadKeys = useCallback(async () => {
     setLoading(true)
@@ -80,10 +119,46 @@ export function Settings() {
   }, [])
 
   useEffect(() => {
+    void loadOrg()
+  }, [loadOrg])
+
+  useEffect(() => {
     void loadKeys()
   }, [loadKeys])
 
+  async function handleSaveOrg() {
+    if (!isAdmin) {
+      toast.error('Admin access required')
+      return
+    }
+    setOrgSaving(true)
+    try {
+      const r = await fetch('/api/organizations/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: orgName.trim() || undefined,
+          slug: orgSlug.trim() || undefined,
+        }),
+      })
+      const data = (await r.json()) as { id?: string; name?: string; slug?: string | null; error?: string }
+      if (!r.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'Save failed')
+      }
+      toast.success('Organization updated')
+      await loadOrg()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setOrgSaving(false)
+    }
+  }
+
   async function handleCreate() {
+    if (!isAdmin) {
+      toast.error('Admin access required')
+      return
+    }
     setCreating(true)
     try {
       const r = await fetch('/api/api-keys', {
@@ -112,6 +187,10 @@ export function Settings() {
 
   async function handleRevoke() {
     if (!revokeTarget) return
+    if (!isAdmin) {
+      toast.error('Admin access required')
+      return
+    }
     setRevoking(true)
     try {
       const r = await fetch(`/api/api-keys?id=${encodeURIComponent(revokeTarget.id)}`, {
@@ -144,10 +223,85 @@ export function Settings() {
     <div className="space-y-8 max-w-4xl">
       <div>
         <h2 className="text-xl font-semibold text-white tracking-tight">Settings</h2>
-        <p className="text-sm text-slate-500 mt-1">Manage organization API keys for the public API.</p>
+        <p className="text-sm text-slate-500 mt-1">
+          Organization profile and API keys for the public REST API.
+        </p>
       </div>
 
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/20">
+            <Building2 className="h-5 w-5 text-emerald-400" aria-hidden />
+          </div>
+          <h2 className="text-lg font-semibold text-white tracking-tight">Organization</h2>
+        </div>
+        {orgLoading ? (
+          <p className="text-sm text-slate-500">Loading organization…</p>
+        ) : org ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="org-name" className="text-slate-300">
+                  Organization name
+                </Label>
+                <Input
+                  id="org-name"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  disabled={!isAdmin}
+                  className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-slug" className="text-slate-300">
+                  Organization slug
+                </Label>
+                <Input
+                  id="org-slug"
+                  value={orgSlug}
+                  onChange={(e) => setOrgSlug(e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="acme-corp"
+                  className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
+                />
+                <p className="text-xs text-slate-500">
+                  lowercase, hyphens, min 3 chars after normalization
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs font-medium capitalize text-slate-200">
+                  Plan: {org.plan}
+                </span>
+                <span className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs font-medium text-slate-200">
+                  Systems: {org._count.aiSystems} / {org.maxSystems}
+                </span>
+                <span className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs font-medium text-slate-200">
+                  Team: {org._count.users}{' '}
+                  {org._count.users === 1 ? 'member' : 'members'}
+                </span>
+              </div>
+              <Button
+                type="button"
+                disabled={!isAdmin || orgSaving}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white shrink-0"
+                onClick={() => void handleSaveOrg()}
+              >
+                {orgSaving ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </div>
+            {!isAdmin ? (
+              <p className="text-xs text-slate-500">Only admins can change organization details.</p>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">Could not load organization.</p>
+        )}
+      </section>
+
       <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
+        <h2 className="text-lg font-semibold text-white tracking-tight mb-6">API Keys</h2>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center">
@@ -160,16 +314,20 @@ export function Settings() {
           </div>
           <Button
             type="button"
+            disabled={!isAdmin}
             onClick={() => {
               setNewlyCreatedKey(null)
               setCreateOpen(true)
             }}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2 disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             Create API Key
           </Button>
         </div>
+        {!isAdmin ? (
+          <p className="mb-4 text-xs text-slate-500">Creating and revoking API keys requires admin access.</p>
+        ) : null}
 
         {newlyCreatedKey && (
           <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-950/30 p-4 space-y-3">
@@ -261,7 +419,8 @@ export function Settings() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:text-red-300 hover:bg-red-950/40 gap-1"
+                        disabled={!isAdmin}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-950/40 gap-1 disabled:opacity-40"
                         onClick={() => setRevokeTarget(k)}
                       >
                         <Trash2 className="w-4 h-4" />

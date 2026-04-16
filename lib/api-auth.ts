@@ -34,9 +34,15 @@ export async function validateApiKey(request: Request): Promise<ValidateApiKeyRe
     };
   }
 
+  if (raw.length < 12) {
+    return { ok: false, response: NextResponse.json({ error: "Invalid API key" }, { status: 401 }) };
+  }
+
+  const prefix = raw.slice(0, 12);
   const digest = hashKey(raw);
-  const keys = await db.apiKey.findMany({
-    where: { revokedAt: null },
+
+  const apiKey = await db.apiKey.findFirst({
+    where: { keyPrefix: prefix, revokedAt: null },
     select: {
       id: true,
       keyHash: true,
@@ -45,23 +51,24 @@ export async function validateApiKey(request: Request): Promise<ValidateApiKeyRe
     },
   });
 
-  const match = keys.find((k: (typeof keys)[number]) => {
+  let valid = false;
+  if (apiKey) {
     try {
       const a = Buffer.from(digest, "hex");
-      const b = Buffer.from(k.keyHash, "hex");
-      return a.length === b.length && timingSafeEqual(a, b);
+      const b = Buffer.from(apiKey.keyHash, "hex");
+      valid = a.length === b.length && timingSafeEqual(a, b);
     } catch {
-      return false;
+      valid = false;
     }
-  });
+  }
 
-  if (!match) {
+  if (!valid || !apiKey) {
     return { ok: false, response: NextResponse.json({ error: "Invalid API key" }, { status: 401 }) };
   }
 
   void db.apiKey
     .update({
-      where: { id: match.id },
+      where: { id: apiKey.id },
       data: { lastUsedAt: new Date() },
     })
     .catch(() => {});
@@ -69,8 +76,8 @@ export async function validateApiKey(request: Request): Promise<ValidateApiKeyRe
   return {
     ok: true,
     ctx: {
-      organization: { id: match.organization.id, name: match.organization.name },
-      apiKeyId: match.id,
+      organization: { id: apiKey.organization.id, name: apiKey.organization.name },
+      apiKeyId: apiKey.id,
     },
   };
 }

@@ -1,32 +1,53 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
+import { z } from "zod";
 import { db } from "@/server/db";
+
+const registerSchema = z.object({
+  email: z.string().email("Invalid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(1, "Name is required").max(100).optional(),
+  organizationName: z
+    .string()
+    .trim()
+    .min(1, "Organization name is required")
+    .max(100),
+});
+
+function normalizeRegisterBody(body: unknown): unknown {
+  if (!body || typeof body !== "object" || body === null) return body;
+  const b = body as Record<string, unknown>;
+  if (b.organizationName === undefined && typeof b.orgName === "string") {
+    return { ...b, organizationName: b.orgName };
+  }
+  if (typeof b.organizationName === "string") {
+    return { ...b, organizationName: b.organizationName.trim() };
+  }
+  if (
+    (b.organizationName === undefined || b.organizationName === "") &&
+    typeof b.email === "string"
+  ) {
+    const local = b.email.trim().split("@")[0];
+    if (local) {
+      return { ...b, organizationName: local };
+    }
+  }
+  return body;
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, orgName } = body as {
-      email?: string;
-      password?: string;
-      name?: string;
-      orgName?: string;
-    };
-
-    if (!email?.trim() || !password?.trim()) {
+    const parsed = registerSchema.safeParse(normalizeRegisterBody(body));
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
+    const { email, password, name, organizationName } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
-    }
 
     const existing = await db.user.findUnique({
       where: { email: normalizedEmail },
@@ -40,7 +61,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hash(password, 12);
 
-    const slug = (orgName || name || normalizedEmail.split("@")[0])
+    const slug = (organizationName || name?.trim() || normalizedEmail.split("@")[0])
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
@@ -50,7 +71,7 @@ export async function POST(request: Request) {
 
     const org = await db.organization.create({
       data: {
-        name: orgName || `${name || normalizedEmail.split("@")[0]}'s Org`,
+        name: organizationName || `${name?.trim() || normalizedEmail.split("@")[0]}'s Org`,
         slug: uniqueSlug,
         plan: "free",
         maxSystems: 3,
@@ -60,7 +81,7 @@ export async function POST(request: Request) {
     const user = await db.user.create({
       data: {
         email: normalizedEmail,
-        name: name?.trim() || null,
+        name: name !== undefined ? name.trim() || null : null,
         hashedPassword,
         role: "admin",
         organizationId: org.id,

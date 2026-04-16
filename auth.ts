@@ -57,6 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (!user?.hashedPassword) return null;
+        if (!user.organizationId) return null;
 
         const valid = await compare(password, user.hashedPassword);
         if (!valid) return null;
