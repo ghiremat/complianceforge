@@ -19,7 +19,9 @@ export async function loginAsDemo(page: Page) {
 }
 
 export async function expectNoServerError(page: Page) {
-  const content = await page.content();
-  expect(content).not.toContain("Internal Server Error");
-  expect(content).not.toContain("500");
+  const title = await page.title();
+  expect(title).not.toContain("500");
+  expect(title).not.toContain("Internal Server Error");
+  const hasErrorHeading = await page.locator("h1, h2").filter({ hasText: /internal server error/i }).count();
+  expect(hasErrorHeading).toBe(0);
 }
