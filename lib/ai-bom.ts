@@ -71,6 +71,13 @@ function npmIsAiRelated(packageName: string): boolean {
   return false;
 }
 
+function pypiIsAiRelated(normalizedName: string): boolean {
+  for (const sig of PYTHON_AI_PACKAGES) {
+    if (normalizePkgName(sig) === normalizedName) return true;
+  }
+  return false;
+}
+
 function parseDependencyLabel(
   label: string
 ): { name: string; source: "pypi" | "npm" } | { env: string } | null {
@@ -181,8 +188,7 @@ export function generateBomFromScan(
       if (depKeys.has(key)) continue;
       depKeys.add(key);
       const norm = normalizePkgName(name);
-      const isAiRelated =
-        source === "pypi" ? PYTHON_AI_PACKAGES.has(norm) : npmIsAiRelated(name);
+      const isAiRelated = source === "pypi" ? pypiIsAiRelated(norm) : npmIsAiRelated(name);
       dependencies.push({
         name,
         version: undefined,

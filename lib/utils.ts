@@ -16,14 +16,14 @@ export function daysUntil(dateStr: string): number {
 }
 
 export function urgencyColor(daysLeft: number): string {
-  if (daysLeft < 0) return 'text-gray-500'
+  if (daysLeft < 0) return 'text-muted-foreground'
   if (daysLeft < 30) return 'text-red-400'
   if (daysLeft < 90) return 'text-amber-400'
   return 'text-green-400'
 }
 
 export function urgencyBg(daysLeft: number): string {
-  if (daysLeft < 0) return 'bg-gray-800 border-gray-700'
+  if (daysLeft < 0) return 'bg-muted border-border'
   if (daysLeft < 30) return 'bg-red-950 border-red-800'
   if (daysLeft < 90) return 'bg-amber-950 border-amber-800'
   return 'bg-green-950 border-green-800'
@@ -35,7 +35,7 @@ export function riskBadgeColor(tier: string): string {
   if (t === 'high') return 'bg-orange-900 text-orange-300 border border-orange-700'
   if (t === 'limited') return 'bg-yellow-900 text-yellow-300 border border-yellow-700'
   if (t === 'minimal') return 'bg-green-900 text-green-300 border border-green-700'
-  return 'bg-gray-800 text-gray-400 border border-gray-600'
+  return 'bg-muted text-muted-foreground border border-border'
 }
 
 export function scoreColor(score: number): string {

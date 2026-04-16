@@ -1,0 +1,39 @@
+import { auth } from "@/auth";
+
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+
+  const isAuthPage =
+    nextUrl.pathname.startsWith("/sign-in") ||
+    nextUrl.pathname.startsWith("/sign-up");
+  const isPublicPage =
+    nextUrl.pathname === "/" ||
+    nextUrl.pathname.startsWith("/trust/") ||
+    nextUrl.pathname.startsWith("/api/auth") ||
+    nextUrl.pathname.startsWith("/api/passport") ||
+    nextUrl.pathname.startsWith("/api/github/webhook") ||
+    nextUrl.pathname.startsWith("/api/register");
+
+  if (isPublicPage) return;
+
+  if (isAuthPage) {
+    if (isLoggedIn) {
+      return Response.redirect(new URL("/dashboard", nextUrl));
+    }
+    return;
+  }
+
+  if (!isLoggedIn) {
+    const callbackUrl = encodeURIComponent(nextUrl.pathname + nextUrl.search);
+    return Response.redirect(
+      new URL(`/sign-in?callbackUrl=${callbackUrl}`, nextUrl)
+    );
+  }
+});
+
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};

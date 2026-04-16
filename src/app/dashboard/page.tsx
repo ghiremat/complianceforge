@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Plus, ChevronDown, ChevronUp, Copy, ExternalLink, RefreshCw } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { cn, API_URL, daysUntil, urgencyColor, urgencyBg, riskBadgeColor, scoreColor, scoreBarColor } from '@/lib/utils'
+import { cn, daysUntil, urgencyColor, urgencyBg, riskBadgeColor, scoreColor, scoreBarColor } from '@/lib/utils'
 
 const ENFORCEMENT_DATE = '2026-08-02'
 const TABS = [
@@ -18,9 +19,11 @@ const TABS = [
 
 export default function Dashboard() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState('command')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState<{ email: string; name: string } | null>(null)
+
+  const user = session?.user ? { email: session.user.email ?? '', name: session.user.name ?? '' } : null
 
   // Data states
   const [stats, setStats] = useState<any>(null)
@@ -51,75 +54,67 @@ export default function Dashboard() {
   const [copyMsg, setCopyMsg] = useState('')
 
   useEffect(() => {
-    const u = localStorage.getItem('cf_user')
-    if (!u) { router.push('/'); return }
-    setUser(JSON.parse(u))
-    loadStats()
-    loadSystems()
-    loadOrgs()
-    loadCalendar()
+    if (status === 'unauthenticated') { router.push('/sign-in'); return }
+    if (status === 'authenticated') {
+      loadStats()
+      loadSystems()
+      loadOrgs()
+      loadCalendar()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [status])
 
   async function loadStats() {
     try {
-      const r = await fetch(`${API_URL}/api/stats`)
+      const r = await fetch('/api/stats')
       if (r.ok) setStats(await r.json())
     } catch {}
   }
 
   async function loadSystems() {
     try {
-      const r = await fetch(`${API_URL}/api/systems`)
+      const r = await fetch('/api/systems')
       if (r.ok) setSystems(await r.json())
     } catch {}
   }
 
   async function loadOrgs() {
     try {
-      const r = await fetch(`${API_URL}/api/organizations`)
+      const r = await fetch('/api/organizations')
       if (r.ok) setOrgs(await r.json())
     } catch {}
   }
 
   async function loadCalendar() {
     try {
-      const r = await fetch(`${API_URL}/api/calendar`)
+      const r = await fetch('/api/calendar')
       if (r.ok) setCalendar(await r.json())
     } catch {}
   }
 
-  async function loadSystemDetail(id: number) {
-    try {
-      const r = await fetch(`${API_URL}/api/systems/${id}`)
-      if (r.ok) {
-        const d = await r.json()
-        setSystemDetail(d)
-        const updates: Record<number, { status: string; evidence: string }> = {}
-        d.compliance_items?.forEach((item: any) => {
-          updates[item.id] = { status: item.status, evidence: item.evidence || '' }
-        })
-        setItemUpdates(updates)
-      }
-    } catch {}
+  async function loadSystemDetail(id: string) {
+    // placeholder — detail view will be built with per-system pages
+    setSystemDetail(null)
   }
 
-  async function classifySystem(id: number) {
-    setClassifyingId(id)
-    try {
-      const r = await fetch(`${API_URL}/api/systems/${id}/classify`, { method: 'POST' })
-      if (r.ok) await loadSystems()
-    } catch {}
-    setClassifyingId(null)
+  async function classifySystem(id: string) {
+    setClassifyingId(id as any)
+    // AI classification will be wired to Gemini in the next phase
+    setTimeout(() => setClassifyingId(null), 1000)
   }
 
   async function addSystem() {
-    if (!newSystem.name || !newSystem.org_id) return
+    if (!newSystem.name) return
     try {
-      const r = await fetch(`${API_URL}/api/systems`, {
+      const r = await fetch('/api/systems', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newSystem, org_id: parseInt(newSystem.org_id) })
+        body: JSON.stringify({
+          name: newSystem.name,
+          description: newSystem.description,
+          use_case: newSystem.use_case,
+          sector: newSystem.sector,
+        })
       })
       if (r.ok) {
         await loadSystems()
@@ -133,51 +128,24 @@ export default function Dashboard() {
     if (!scanUrl) return
     setScanLoading(true)
     setScanResult(null)
-    try {
-      const body: any = { repo_url: scanUrl }
-      if (scanSystemId) body.system_id = parseInt(scanSystemId)
-      const r = await fetch(`${API_URL}/api/scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      if (r.ok) setScanResult(await r.json())
-    } catch {}
-    setScanLoading(false)
+    // GitHub scanner will be wired in the next phase
+    setTimeout(() => setScanLoading(false), 1000)
   }
 
   async function saveComplianceItem(itemId: number) {
-    const update = itemUpdates[itemId]
-    if (!update) return
-    try {
-      await fetch(`${API_URL}/api/compliance/${itemId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(update)
-      })
-      if (selectedSystemId) {
-        await loadSystemDetail(selectedSystemId)
-        const scoreR = await fetch(`${API_URL}/api/systems/${selectedSystemId}/score`)
-        if (scoreR.ok) await loadSystems()
-      }
-    } catch {}
+    // Compliance item updates will be wired in the per-system pages phase
   }
 
   async function loadReport() {
-    if (!reportSystemId) return
-    try {
-      const r = await fetch(`${API_URL}/api/systems/${reportSystemId}/report`)
-      if (r.ok) setReport(await r.json())
-    } catch {}
+    // Reports will be wired in the next phase
   }
 
   function handleLogout() {
-    localStorage.removeItem('cf_user')
-    router.push('/')
+    signOut({ callbackUrl: '/sign-in' })
   }
 
   function copyReportUrl() {
-    const url = `${API_URL}/api/systems/${reportSystemId}/report`
+    const url = `${window.location.origin}/api/systems/${reportSystemId}/report`
     navigator.clipboard.writeText(url)
     setCopyMsg('Copied!')
     setTimeout(() => setCopyMsg(''), 2000)
@@ -367,18 +335,12 @@ export default function Dashboard() {
               {showAddSystem && (
                 <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6">
                   <h3 className="font-semibold text-white mb-4">Register New AI System</h3>
+                  {session?.user?.organizationName && (
+                    <p className="text-sm text-slate-400 mb-4">
+                      Adding to <span className="text-indigo-400 font-medium">{session.user.organizationName}</span>
+                    </p>
+                  )}
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Organization *</label>
-                      <select
-                        value={newSystem.org_id}
-                        onChange={e => setNewSystem(s => ({ ...s, org_id: e.target.value }))}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="">Select org...</option>
-                        {orgs.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                      </select>
-                    </div>
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">System Name *</label>
                       <input
@@ -613,9 +575,9 @@ export default function Dashboard() {
                     <select
                       value={selectedSystemId ?? ''}
                       onChange={e => {
-                        const id = parseInt(e.target.value)
-                        setSelectedSystemId(id)
-                        loadSystemDetail(id)
+                        const id = e.target.value || null
+                        setSelectedSystemId(id as any)
+                        if (id) loadSystemDetail(id)
                         setExpandedItem(null)
                       }}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
@@ -807,7 +769,7 @@ export default function Dashboard() {
                 {reportSystemId && (
                   <div className="mt-4 flex items-center gap-2 bg-slate-800 rounded-xl p-3">
                     <p className="flex-1 text-xs text-slate-400 font-mono truncate">
-                      {API_URL}/api/systems/{reportSystemId}/report
+                      /api/systems/{reportSystemId}/report
                     </p>
                     <button
                       onClick={copyReportUrl}
@@ -817,7 +779,7 @@ export default function Dashboard() {
                       {copyMsg || 'Copy URL'}
                     </button>
                     <a
-                      href={`${API_URL}/api/systems/${reportSystemId}/report`}
+                      href={`/api/systems/${reportSystemId}/report`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors flex-shrink-0"
