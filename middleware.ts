@@ -13,7 +13,8 @@ export default auth((req) => {
     nextUrl.pathname.startsWith("/api/auth") ||
     nextUrl.pathname.startsWith("/api/passport") ||
     nextUrl.pathname.startsWith("/api/github/webhook") ||
-    nextUrl.pathname.startsWith("/api/register");
+    nextUrl.pathname.startsWith("/api/register") ||
+    nextUrl.pathname.startsWith("/api/v1/");
 
   if (isPublicPage) return;
 

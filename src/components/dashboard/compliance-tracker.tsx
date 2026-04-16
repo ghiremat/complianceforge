@@ -43,13 +43,30 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
     setSaving(itemId)
     try {
       const update = itemUpdates[itemId]
-      if (!update) {
+      const item = complianceItems.find((i) => i.id === itemId)
+      if (!update || !item) {
         toast.info('No changes to save')
+        setSaving(null)
         return
       }
-      toast.success('Compliance item updated locally')
+      const r = await fetch(`/api/systems/${selectedSystemId}/compliance-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: itemId,
+          title: item.article_title,
+          status: update.status ?? item.status,
+          evidence: update.evidence ?? '',
+        }),
+      })
+      if (r.ok) {
+        toast.success('Compliance item saved')
+      } else {
+        const err = (await r.json().catch(() => ({ error: 'Save failed' }))) as { error?: string }
+        toast.error(err.error ?? 'Failed to save')
+      }
     } catch {
-      toast.error('Failed to save')
+      toast.error('Failed to save compliance item')
     } finally {
       setSaving(null)
     }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X } from 'lucide-react'
+import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Settings as SettingsIcon } from 'lucide-react'
 import { cn, daysUntil } from '@/lib/utils'
 import type { StatsData, SystemData, CalendarItem } from '@/src/types/dashboard'
 import { CommandCenter } from '@/src/components/dashboard/command-center'
@@ -12,6 +12,7 @@ import { GitHubScanner } from '@/src/components/dashboard/github-scanner'
 import { ComplianceTracker } from '@/src/components/dashboard/compliance-tracker'
 import { Deadlines } from '@/src/components/dashboard/deadlines'
 import { Reports } from '@/src/components/dashboard/reports'
+import { Settings } from '@/src/components/dashboard/settings'
 
 const ENFORCEMENT_DATE = '2026-08-02'
 const TABS = [
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'tracker', label: 'Compliance Tracker', icon: CheckSquare },
   { id: 'calendar', label: 'Deadlines', icon: Calendar },
   { id: 'reports', label: 'Reports', icon: FileText },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ] as const
 
 export default function Dashboard() {
@@ -192,6 +194,7 @@ export default function Dashboard() {
           {activeTab === 'tracker' && <ComplianceTracker systems={systems} />}
           {activeTab === 'calendar' && <Deadlines calendar={calendar} loading={calendarLoading} />}
           {activeTab === 'reports' && <Reports systems={systems} />}
+          {activeTab === 'settings' && <Settings />}
         </main>
       </div>
     </div>

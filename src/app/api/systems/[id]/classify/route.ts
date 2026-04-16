@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/server/db";
 import { classifyAiSystem } from "@/lib/ai-provider";
+import { calculateComplianceScore } from "@/lib/compliance-scoring";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,8 @@ export async function POST(request: Request, { params }: RouteParams) {
         complianceStatus: "in_progress",
       },
     });
+
+    await calculateComplianceScore(systemId);
 
     // Create audit log
     await db.auditLog.create({

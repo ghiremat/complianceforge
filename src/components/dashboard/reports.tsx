@@ -34,6 +34,10 @@ export function Reports({ systems }: ReportsProps) {
   const [report, setReport] = useState<ReportView | null>(null)
   const [copyMsg, setCopyMsg] = useState('')
 
+  const reportSystem = systems.find((s) => s.id === reportSystemId)
+  const reportTrustPath =
+    reportSystemId && reportSystem?.org_slug ? `/trust/${reportSystem.org_slug}/${reportSystemId}` : null
+
   function generateReport() {
     const system = systems.find((s) => s.id === reportSystemId)
     if (!system) return
@@ -43,7 +47,13 @@ export function Reports({ systems }: ReportsProps) {
   }
 
   function copyReportUrl() {
-    const url = `${window.location.origin}/trust/${reportSystemId}`
+    const selectedSys = systems.find((s) => s.id === reportSystemId)
+    const slug = selectedSys?.org_slug
+    if (!slug) {
+      toast.error('Organization slug not set — configure it in settings')
+      return
+    }
+    const url = `${window.location.origin}/trust/${slug}/${reportSystemId}`
     navigator.clipboard.writeText(url)
     setCopyMsg('Copied!')
     setTimeout(() => setCopyMsg(''), 2000)
@@ -90,7 +100,7 @@ export function Reports({ systems }: ReportsProps) {
         {reportSystemId && (
           <div className="mt-4 flex items-center gap-2 bg-slate-800 rounded-xl p-3">
             <p className="flex-1 text-xs text-slate-400 font-mono truncate">
-              /trust/{reportSystemId}
+              {reportTrustPath ?? 'Set organization slug in settings to build a share URL'}
             </p>
             <button
               type="button"
@@ -101,9 +111,15 @@ export function Reports({ systems }: ReportsProps) {
               {copyMsg || 'Copy URL'}
             </button>
             <a
-              href={`/trust/${reportSystemId}`}
+              href={reportTrustPath ?? '#'}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                if (!reportTrustPath) {
+                  e.preventDefault()
+                  toast.error('Organization slug not set — configure it in settings')
+                }
+              }}
               className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors flex-shrink-0"
             >
               <ExternalLink className="w-3.5 h-3.5" />

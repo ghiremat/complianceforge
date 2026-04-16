@@ -10,7 +10,7 @@ export async function GET() {
 
   const systems = await db.aiSystem.findMany({
     where: { organizationId: session.user.organizationId },
-    include: { organization: { select: { name: true } } },
+    include: { organization: { select: { name: true, slug: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -25,6 +25,7 @@ export async function GET() {
       compliance_score: s.complianceScore,
       compliance_status: s.complianceStatus,
       org_name: s.organization.name,
+      org_slug: s.organization.slug,
       source_repo: s.sourceRepo,
       created_at: s.createdAt,
     }))

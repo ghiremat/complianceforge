@@ -7,12 +7,12 @@ const DEFAULT_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b";
 const FALLBACK_MODEL = "nvidia/llama-3.3-nemotron-super-49b-v1";
 const REQUEST_TIMEOUT_MS = 30_000;
 
-/** Fallback key when OPEN_ROUTER_KEY is unset (prefer env in production). */
-const OPEN_ROUTER_KEY_FALLBACK =
-  "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";
-
 function getOpenRouterKey(): string {
-  return process.env.OPEN_ROUTER_KEY?.trim() || OPEN_ROUTER_KEY_FALLBACK;
+  const key = process.env.OPEN_ROUTER_KEY?.trim();
+  if (!key) {
+    throw new Error("OPEN_ROUTER_KEY environment variable is required");
+  }
+  return key;
 }
 
 export type AiSystemInput = {

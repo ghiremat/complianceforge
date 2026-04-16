@@ -8,6 +8,7 @@ export interface SystemData {
   compliance_score: number
   compliance_status: string
   org_name: string
+  org_slug: string | null
   source_repo: string | null
   created_at: string
 }

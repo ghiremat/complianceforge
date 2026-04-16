@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Session } from 'next-auth'
+import Link from 'next/link'
 import { Plus, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, riskBadgeColor, scoreColor, scoreBarColor } from '@/lib/utils'
@@ -186,7 +187,12 @@ export function AiInventory({ systems, systemsLoading, session, onSystemsChanged
                   {systems.map((sys) => (
                     <tr key={sys.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                       <td className="p-4">
-                        <p className="font-medium text-white text-sm">{sys.name}</p>
+                        <Link
+                          href={`/dashboard/systems/${sys.id}`}
+                          className="font-medium text-white text-sm hover:text-indigo-400 transition-colors"
+                        >
+                          {sys.name}
+                        </Link>
                         <p className="text-slate-500 text-xs">{sys.org_name}</p>
                       </td>
                       <td className="p-4 text-slate-300 text-sm">{sys.sector || '—'}</td>
