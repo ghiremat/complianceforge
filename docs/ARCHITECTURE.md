@@ -17,8 +17,8 @@
 │  (repos / PRs)  │     │  (Vercel Edge — EU)    │     │ (trust pages)   │
 └────────┬────────┘     ├────────────────────────┤     └────────┬────────┘
          │              │  Landing Page          │              │
-         │              │  Auth (NextAuth v4 +   │              │
-         │              │   cf_auth cookie)      │              │
+         │              │  Auth (NextAuth v5     │              │
+         │              │   Credentials + JWT)   │              │
          │              │  Dashboard             │              │
          │              │  AI System Inventory   │              │
          │              │  Risk Classifier UI    │              │
@@ -54,8 +54,8 @@
                     └──┬──────┬──────┬──────┬──────┬────┘
                        │      │      │      │      │
           ┌────────────▼┐ ┌───▼───┐ ┌▼─────┐ ┌▼──────────┐
-          │  CLAUDE AI  │ │PRISMA │ │ LRU  │ │ AGENTMAIL │
-          │ (Anthropic) │ │(Neon) │ │CACHE │ │ (Email)   │
+          │ OPENROUTER  │ │PRISMA │ │ LRU  │ │ AGENTMAIL │
+          │(NVIDIA/LLM) │ │(Neon) │ │CACHE │ │ (Email)   │
           ├─────────────┤ ├───────┤ │(proc)│ ├───────────┤
           │Risk Classify│ │AI Sys │ ├──────┤ │Compliance │
           │Doc Generate │ │Assess │ │Rate  │ │ Alerts    │
@@ -107,8 +107,8 @@
 
 2. User requests risk classification
    └→ Server Action / internal service
-      └→ Claude API: classifyRiskTier(systemMetadata)
-         └→ Returns: { riskTier, confidence, justification, ... }
+      └→ OpenRouter API: classifyAiSystem(systemMetadata)
+         └→ NVIDIA Llama model returns: { riskTier, confidence, justification, ... }
       └→ Prisma: INSERT assessments
       └→ Prisma: UPDATE ai_systems SET risk_tier
       └→ Prisma: INSERT audit_logs
@@ -116,7 +116,7 @@
 
 3. System generates Annex IV documentation
    └→ Server Action / document pipeline
-      └→ Claude API: generateDocumentSection() × sections
+      └→ OpenRouter API: generateDocumentSection() × sections
       └→ Prisma: INSERT documents (per section)
       └→ Prisma: INSERT audit_logs
       └→ AgentMail: Send report ready notification
@@ -153,9 +153,9 @@ Embeddable passport
 │     └─ Rate limiting (lru-cache, in-process)    │
 │                                                   │
 │  2. AUTHENTICATION                                │
-│     ├─ NextAuth v4 (Google / GitHub OAuth)      │
-│     ├─ Custom signed cf_auth cookie (HMAC)       │
-│     └─ Database sessions (Prisma adapter)        │
+│     ├─ NextAuth v5 (Credentials provider)       │
+│     ├─ JWT session strategy                      │
+│     └─ Prisma adapter for user/account storage   │
 │                                                   │
 │  3. AUTHORIZATION                                 │
 │     ├─ RBAC: Admin > CO > Auditor > Viewer       │
@@ -191,15 +191,15 @@ Embeddable passport
 │         │                │                        │
 │  ┌──────▼────────────────▼──────┐                │
 │  │        Serverless Functions    │                │
-│  │  (Route handlers, Claude API)  │                │
+│  │  (Route handlers, OpenRouter)  │                │
 │  └───────────────┬───────────────┘                │
 └──────────────────┼───────────────────────────────┘
                    │
      ┌─────────────┼────────────────────┐
      │             │                    │
 ┌────▼────┐  ┌────▼─────┐  ┌──────────▼──┐
-│  Neon   │  │ In-proc  │  │  Anthropic  │
-│ Postgres│  │ LRU cache│  │  Claude API │
+│  Neon   │  │ In-proc  │  │ OpenRouter  │
+│ Postgres│  │ LRU cache│  │ (NVIDIA LLM)│
 │  (EU)   │  │ (limits) │  │             │
 └─────────┘  └──────────┘  └────────────┘
 ```
@@ -208,12 +208,12 @@ Embeddable passport
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Frontend | Next.js 15 App Router | SSR for SEO, server components for performance, API routes colocation |
-| Mutations & server logic | Server Actions + Route Handlers | First-class App Router pattern; JSON APIs for integrations without tRPC |
+| Frontend | Next.js 14.2.5 App Router | SSR for SEO, server components for performance, API routes colocation |
+| Mutations & server logic | Server Actions + Route Handlers | First-class App Router pattern; JSON APIs for integrations |
 | Database | Neon PostgreSQL | Serverless, EU regions, branching for dev/staging |
 | ORM | Prisma | Type-safe queries, migration management, schema-first |
-| AI | Claude claude-sonnet-4-20250514 | Best reasoning for legal/compliance classification, structured output |
-| Auth | NextAuth v4 + `cf_auth` cookie | OAuth providers + Prisma adapter; HMAC cookie for lightweight request checks |
+| AI | OpenRouter (NVIDIA Llama-class models) | Multi-model routing, structured JSON output, EU AI Act compliance classification |
+| Auth | NextAuth v5 (Credentials + JWT) | Email/password auth + Prisma adapter; JWT sessions for stateless request validation |
 | Email | AgentMail | API-first, SOC2 certified, attachment support |
 | Hosting | Vercel EU | Edge network, EU data residency, zero-config deployment |
 | Rate limiting / hot cache | lru-cache (in-process) | No Redis dependency per instance; suitable for serverless limits |
