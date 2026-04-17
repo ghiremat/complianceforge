@@ -1,18 +1,64 @@
 /**
- * OpenRouter (OpenAI-compatible) client for EU AI Act classification and repo scan analysis.
+ * AI provider client supporting NVIDIA NIM (primary) and OpenRouter (fallback).
+ * Both expose OpenAI-compatible chat completion endpoints.
  */
 
+const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b";
-const FALLBACK_MODEL = "nvidia/llama-3.3-nemotron-super-49b-v1";
-const REQUEST_TIMEOUT_MS = 30_000;
+const NIM_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b";
+const OPENROUTER_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b";
+const OPENROUTER_FALLBACK = "nvidia/llama-3.3-nemotron-super-49b-v1";
+const REQUEST_TIMEOUT_MS = 55_000;
 
-function getOpenRouterKey(): string {
-  const key = process.env.OPEN_ROUTER_KEY?.trim();
-  if (!key) {
-    throw new Error("OPEN_ROUTER_KEY environment variable is required");
+type Provider = {
+  url: string;
+  model: string;
+  headers: Record<string, string>;
+};
+
+function getProviders(): Provider[] {
+  const providers: Provider[] = [];
+  const nimKey = process.env.NIM_API_KEY?.trim();
+  const orKey = process.env.OPEN_ROUTER_KEY?.trim();
+
+  if (nimKey) {
+    providers.push({
+      url: NIM_URL,
+      model: NIM_MODEL,
+      headers: {
+        Authorization: `Bearer ${nimKey}`,
+        "Content-Type": "application/json",
+      },
+    });
   }
-  return key;
+
+  if (orKey) {
+    providers.push({
+      url: OPENROUTER_URL,
+      model: OPENROUTER_MODEL,
+      headers: {
+        Authorization: `Bearer ${orKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://complianceforge.ai",
+        "X-Title": "ComplianceForge",
+      },
+    });
+    providers.push({
+      url: OPENROUTER_URL,
+      model: OPENROUTER_FALLBACK,
+      headers: {
+        Authorization: `Bearer ${orKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://complianceforge.ai",
+        "X-Title": "ComplianceForge",
+      },
+    });
+  }
+
+  if (providers.length === 0) {
+    throw new Error("NIM_API_KEY or OPEN_ROUTER_KEY environment variable is required");
+  }
+  return providers;
 }
 
 export type AiSystemInput = {
@@ -67,21 +113,15 @@ function extractJsonObject(text: string): string {
 }
 
 async function fetchChatCompletion(
-  model: string,
+  provider: Provider,
   messages: ChatMessage[],
   signal: AbortSignal
 ): Promise<string> {
-  const key = getOpenRouterKey();
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetch(provider.url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://complianceforge.ai",
-      "X-Title": "ComplianceForge",
-    },
+    headers: provider.headers,
     body: JSON.stringify({
-      model,
+      model: provider.model,
       messages,
       temperature: 0.2,
       response_format: { type: "json_object" },
@@ -91,7 +131,7 @@ async function fetchChatCompletion(
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
-    throw new Error(`OpenRouter HTTP ${res.status}: ${errText.slice(0, 500)}`);
+    throw new Error(`${provider.url} HTTP ${res.status} [${provider.model}]: ${errText.slice(0, 500)}`);
   }
 
   const data = (await res.json()) as {
@@ -99,7 +139,7 @@ async function fetchChatCompletion(
   };
   const content = data.choices?.[0]?.message?.content;
   if (typeof content !== "string" || !content.trim()) {
-    throw new Error("OpenRouter returned empty content");
+    throw new Error(`${provider.model} returned empty content`);
   }
   return content;
 }
@@ -115,12 +155,12 @@ async function withTimeout<T>(ms: number, fn: (signal: AbortSignal) => Promise<T
 }
 
 async function runChatJson<T>(
-  model: string,
+  provider: Provider,
   messages: ChatMessage[],
   label: string
 ): Promise<T> {
   return withTimeout(REQUEST_TIMEOUT_MS, async (signal) => {
-    const raw = await fetchChatCompletion(model, messages, signal);
+    const raw = await fetchChatCompletion(provider, messages, signal);
     let parsed: unknown;
     try {
       parsed = JSON.parse(extractJsonObject(raw));
@@ -131,22 +171,25 @@ async function runChatJson<T>(
   });
 }
 
-/** Try primary model, then one retry with fallback model on failure. */
-async function runChatJsonWithModelFallback<T>(
+/** Try each provider in order (NIM → OpenRouter primary → OpenRouter fallback). */
+async function runWithProviderFallback<T>(
   messages: ChatMessage[],
   label: string
 ): Promise<T> {
-  try {
-    return await runChatJson<T>(DEFAULT_MODEL, messages, label);
-  } catch (first) {
+  const providers = getProviders();
+  const errors: string[] = [];
+
+  for (const provider of providers) {
     try {
-      return await runChatJson<T>(FALLBACK_MODEL, messages, label);
-    } catch (second) {
-      const a = first instanceof Error ? first.message : String(first);
-      const b = second instanceof Error ? second.message : String(second);
-      throw new Error(`${label} failed: ${a}; fallback: ${b}`);
+      return await runChatJson<T>(provider, messages, label);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[${label}] ${provider.model} via ${provider.url} failed: ${msg}`);
+      errors.push(`${provider.model}: ${msg}`);
     }
   }
+
+  throw new Error(`${label} — all providers failed: ${errors.join("; ")}`);
 }
 
 const CLASSIFICATION_SYSTEM_PROMPT = `You are an expert EU AI Act (Regulation (EU) 2024/1689) compliance assessor.
@@ -199,7 +242,7 @@ export async function classifyAiSystem(system: AiSystemInput): Promise<Classific
     { role: "system", content: CLASSIFICATION_SYSTEM_PROMPT },
     { role: "user", content: buildClassificationUserPrompt(system) },
   ];
-  const raw = await runChatJsonWithModelFallback<ClassificationResult>(
+  const raw = await runWithProviderFallback<ClassificationResult>(
     messages,
     "classifyAiSystem"
   );
@@ -225,7 +268,7 @@ export async function scanRepositoryWithAI(
     { role: "system", content: SCAN_SYSTEM_PROMPT },
     { role: "user", content: user },
   ];
-  const raw = await runChatJsonWithModelFallback<ScanAnalysisResult>(messages, "scanRepositoryWithAI");
+  const raw = await runWithProviderFallback<ScanAnalysisResult>(messages, "scanRepositoryWithAI");
 
   return {
     overallScore: Math.min(100, Math.max(0, Number(raw.overallScore) || 0)),

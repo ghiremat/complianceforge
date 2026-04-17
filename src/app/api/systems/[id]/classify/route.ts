@@ -5,6 +5,7 @@ import { classifyAiSystem } from "@/lib/ai-provider";
 import { calculateComplianceScore } from "@/lib/compliance-scoring";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -90,9 +91,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("Classification error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Classification error:", message);
     return NextResponse.json(
-      { error: "Classification failed. Please try again." },
+      { error: "Classification failed. Please try again.", detail: message },
       { status: 500 }
     );
   }

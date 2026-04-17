@@ -10,6 +10,7 @@ import {
 } from "@/lib/github-scanner";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const scanSchema = z.object({
   repoUrl: z
