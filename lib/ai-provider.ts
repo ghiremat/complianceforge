@@ -14,6 +14,7 @@ type Provider = {
   url: string;
   model: string;
   headers: Record<string, string>;
+  supportsJsonMode: boolean;
 };
 
 function getProviders(): Provider[] {
@@ -29,6 +30,7 @@ function getProviders(): Provider[] {
         Authorization: `Bearer ${nimKey}`,
         "Content-Type": "application/json",
       },
+      supportsJsonMode: false,
     });
   }
 
@@ -42,6 +44,7 @@ function getProviders(): Provider[] {
         "HTTP-Referer": "https://complianceforge.ai",
         "X-Title": "ComplianceForge",
       },
+      supportsJsonMode: true,
     });
     providers.push({
       url: OPENROUTER_URL,
@@ -52,6 +55,7 @@ function getProviders(): Provider[] {
         "HTTP-Referer": "https://complianceforge.ai",
         "X-Title": "ComplianceForge",
       },
+      supportsJsonMode: true,
     });
   }
 
@@ -117,15 +121,20 @@ async function fetchChatCompletion(
   messages: ChatMessage[],
   signal: AbortSignal
 ): Promise<string> {
+  const payload: Record<string, unknown> = {
+    model: provider.model,
+    messages,
+    temperature: 0.2,
+    max_tokens: 2048,
+  };
+  if (provider.supportsJsonMode) {
+    payload.response_format = { type: "json_object" };
+  }
+
   const res = await fetch(provider.url, {
     method: "POST",
     headers: provider.headers,
-    body: JSON.stringify({
-      model: provider.model,
-      messages,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    }),
+    body: JSON.stringify(payload),
     signal,
   });
 
@@ -135,10 +144,16 @@ async function fetchChatCompletion(
   }
 
   const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
+    choices?: Array<{
+      message?: {
+        content?: string | null;
+        reasoning_content?: string | null;
+      };
+    }>;
   };
-  const content = data.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || !content.trim()) {
+  const msg = data.choices?.[0]?.message;
+  const content = msg?.content?.trim() || msg?.reasoning_content?.trim();
+  if (!content) {
     throw new Error(`${provider.model} returned empty content`);
   }
   return content;
