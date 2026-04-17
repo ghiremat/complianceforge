@@ -5,7 +5,7 @@
 
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const NIM_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b";
+const NIM_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b-v1";
 const OPENROUTER_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b";
 const OPENROUTER_FALLBACK = "nvidia/llama-3.3-nemotron-super-49b-v1";
 const REQUEST_TIMEOUT_MS = 55_000;
