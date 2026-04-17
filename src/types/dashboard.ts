@@ -4,6 +4,8 @@ export interface SystemData {
   description: string | null
   sector: string
   use_case: string
+  /** EU AI Act role: provider vs deployer (inventory / FRIA). */
+  role?: string
   risk_tier: string
   compliance_score: number
   compliance_status: string
@@ -25,11 +27,13 @@ export interface CalendarItem {
   id: string
   title: string
   description: string | null
-  deadline_date: string
+  dueDate: string
   days_left: number
   priority: string
   status: string
   category?: string
+  /** Present for EU AI Act regulatory milestones from `/api/calendar`. */
+  article?: string
 }
 
 export interface ScanResultData {

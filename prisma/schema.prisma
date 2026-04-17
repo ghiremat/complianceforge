@@ -110,6 +110,7 @@ model AiSystem {
   endUsers         String?
   deploymentRegion String   @default("EU")
   riskTier         String   @default("unassessed")
+  role             String   @default("provider") // "provider" or "deployer"
   complianceStatus String   @default("not_started")
   complianceScore  Int      @default(0)
   sourceRepo       String?

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/server/db";
+import { EU_AI_ACT_TIMELINE } from "@/lib/eu-ai-act";
 
 function daysUntil(date: Date): number {
   const today = new Date();
@@ -20,51 +21,31 @@ export async function GET() {
     take: 20,
   });
 
-  const enforcement = new Date("2026-08-02");
-
-  const builtIn = [
-    {
-      id: "eu-enforcement",
-      title: "EU AI Act Full Enforcement",
-      description: "High-risk AI system requirements become mandatory",
-      deadline_date: "2026-08-02",
-      days_left: daysUntil(enforcement),
-      priority: "high",
-      status: "pending",
+  const regulatory = EU_AI_ACT_TIMELINE.map((m) => {
+    const date = new Date(m.date);
+    return {
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      dueDate: m.date,
+      days_left: daysUntil(date),
+      priority: m.status === "upcoming" ? "high" : m.status === "passed" ? "low" : "medium",
       category: "regulatory",
-    },
-    {
-      id: "gpai-deadline",
-      title: "GPAI Model Compliance Deadline",
-      description: "General-purpose AI model obligations (passed)",
-      deadline_date: "2025-08-02",
-      days_left: daysUntil(new Date("2025-08-02")),
-      priority: "high",
-      status: daysUntil(new Date("2025-08-02")) < 0 ? "overdue" : "pending",
-      category: "regulatory",
-    },
-    {
-      id: "prohibited-deadline",
-      title: "Prohibited AI Practices Ban",
-      description: "Prohibited AI system practices enforcement (passed)",
-      deadline_date: "2025-02-02",
-      days_left: daysUntil(new Date("2025-02-02")),
-      priority: "high",
-      status: "overdue",
-      category: "regulatory",
-    },
-  ];
+      status: m.status === "passed" ? "overdue" : "pending",
+      article: m.article,
+    };
+  });
 
   const custom = deadlines.map((d) => ({
     id: d.id,
     title: d.title,
     description: d.description,
-    deadline_date: d.dueDate.toISOString().slice(0, 10),
+    dueDate: d.dueDate.toISOString().slice(0, 10),
     days_left: daysUntil(d.dueDate),
     priority: d.priority,
     status: d.status,
     category: d.category,
   }));
 
-  return NextResponse.json([...builtIn, ...custom]);
+  return NextResponse.json([...regulatory, ...custom]);
 }

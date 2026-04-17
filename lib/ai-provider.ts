@@ -85,7 +85,10 @@ export type ClassificationResult = {
   requirements: string[];
   recommendations: string[];
   annexIiiCategory: string | null;
+  annexIiiCategoryName: string | null;
   complianceGaps: string[];
+  prohibitedPracticeId: string | null;
+  borderlineNotes: string | null;
 };
 
 export type ScanFindingInput = {
@@ -207,19 +210,60 @@ async function runWithProviderFallback<T>(
   throw new Error(`${label} — all providers failed: ${errors.join("; ")}`);
 }
 
-const CLASSIFICATION_SYSTEM_PROMPT = `You are an expert EU AI Act (Regulation (EU) 2024/1689) compliance assessor.
-Classify the described AI system into exactly one risk tier: "unacceptable", "high", "limited", or "minimal".
-Base your reasoning on the regulation's definitions, prohibited practices, high-risk categories (Annex III), and transparency obligations for limited-risk AI.
-Respond ONLY with a single JSON object (no markdown) with this exact shape:
+const CLASSIFICATION_SYSTEM_PROMPT = `You are an expert EU AI Act (Regulation (EU) 2024/1689) compliance assessor performing risk classification under Article 6.
+
+CLASSIFICATION FRAMEWORK:
+
+1. UNACCEPTABLE (Article 5) — Prohibited practices:
+   - Subliminal manipulation causing harm (Art. 5(1)(a))
+   - Exploiting vulnerabilities of age/disability/economic situation (Art. 5(1)(b))
+   - Social scoring by public authorities or cross-context scoring (Art. 5(1)(c))
+   - Crime prediction based solely on profiling/personality (Art. 5(1)(d))
+   - Untargeted facial recognition database scraping (Art. 5(1)(e))
+   - Emotion recognition in workplace/education (Art. 5(1)(f))
+   - Biometric categorisation for sensitive attributes (Art. 5(1)(g))
+   - Real-time remote biometric identification in public spaces (Art. 5(1)(h))
+
+2. HIGH-RISK (Article 6(2), Annex III) — 8 categories:
+   Category 1: Biometrics — identification, categorisation, emotion recognition
+   Category 2: Critical infrastructure — digital infra, traffic, utilities safety
+   Category 3: Education — admissions, grading, exam proctoring
+   Category 4: Employment — recruitment, HR decisions, task allocation, monitoring
+   Category 5: Essential services — credit scoring, insurance, benefits, emergency dispatch
+   Category 6: Law enforcement — risk assessment, evidence, profiling, crime analytics
+   Category 7: Migration & border — asylum, visa, border ID, migration risk
+   Category 8: Justice & democracy — legal research, judicial support, election influence
+
+   Also high-risk under Article 6(1): AI as safety component of products under Annex I EU harmonisation legislation.
+
+3. LIMITED RISK (Article 50) — Transparency obligations:
+   - AI interacting with persons (chatbots) must disclose AI nature
+   - Emotion recognition or biometric categorisation systems must inform subjects
+   - AI-generated content (deepfakes, synthetic text) must be labelled
+
+4. MINIMAL RISK — All other AI systems. Voluntary codes of conduct apply.
+
+INSTRUCTIONS:
+- Classify into exactly one tier based on the framework above
+- For high-risk, identify the specific Annex III category (1-8) or Annex I product
+- For unacceptable, identify the specific Article 5 prohibition
+- Provide concrete, article-referenced justification
+- Flag if the system is borderline between tiers
+- Consider the ROLE: provider (develops/places on market) vs deployer (uses in professional activity)
+
+Respond ONLY with a JSON object:
 {
-  "riskTier": string,
+  "riskTier": "unacceptable" | "high" | "limited" | "minimal",
   "confidence": number (0-1),
-  "justification": string,
-  "keyArticles": string[] (relevant articles/annexes as short references, e.g. "Article 5", "Annex III"),
-  "requirements": string[] (concrete obligations that likely apply),
-  "recommendations": string[] (next steps for the operator),
-  "annexIiiCategory": string | null (if high-risk and mappable to an Annex III category name, else null),
-  "complianceGaps": string[] (gaps or unknowns to clarify)
+  "justification": string (cite specific articles),
+  "keyArticles": string[],
+  "requirements": string[] (concrete obligations from the Act),
+  "recommendations": string[] (actionable next steps),
+  "annexIiiCategory": number | null (1-8 if high-risk Annex III, null otherwise),
+  "annexIiiCategoryName": string | null (category title if applicable),
+  "complianceGaps": string[],
+  "prohibitedPracticeId": string | null (e.g. "art5-1a" if unacceptable),
+  "borderlineNotes": string | null (if classification is uncertain)
 }`;
 
 function buildClassificationUserPrompt(system: AiSystemInput): string {
@@ -244,11 +288,11 @@ function normalizeClassification(raw: ClassificationResult): ClassificationResul
     keyArticles: Array.isArray(raw.keyArticles) ? raw.keyArticles.map(String) : [],
     requirements: Array.isArray(raw.requirements) ? raw.requirements.map(String) : [],
     recommendations: Array.isArray(raw.recommendations) ? raw.recommendations.map(String) : [],
-    annexIiiCategory:
-      raw.annexIiiCategory === null || raw.annexIiiCategory === undefined
-        ? null
-        : String(raw.annexIiiCategory),
+    annexIiiCategory: raw.annexIiiCategory != null ? String(raw.annexIiiCategory) : null,
+    annexIiiCategoryName: raw.annexIiiCategoryName ? String(raw.annexIiiCategoryName) : null,
     complianceGaps: Array.isArray(raw.complianceGaps) ? raw.complianceGaps.map(String) : [],
+    prohibitedPracticeId: raw.prohibitedPracticeId ? String(raw.prohibitedPracticeId) : null,
+    borderlineNotes: raw.borderlineNotes ? String(raw.borderlineNotes) : null,
   };
 }
 

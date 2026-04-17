@@ -3,13 +3,16 @@
 import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Settings as SettingsIcon, AlertTriangle, ClipboardList, Users } from 'lucide-react'
+import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Settings as SettingsIcon, AlertTriangle, ClipboardList, Users, Scale, Target, LayoutGrid } from 'lucide-react'
 import { cn, daysUntil } from '@/lib/utils'
 import type { StatsData, SystemData, CalendarItem } from '@/src/types/dashboard'
 import { CommandCenter } from '@/src/components/dashboard/command-center'
 import { AiInventory } from '@/src/components/dashboard/ai-inventory'
 import { GitHubScanner } from '@/src/components/dashboard/github-scanner'
 import { ComplianceTracker } from '@/src/components/dashboard/compliance-tracker'
+import { ModuleStatus } from '@/src/components/dashboard/module-status'
+import { GapAnalysis } from '@/src/components/dashboard/gap-analysis'
+import { FRIA } from '@/src/components/dashboard/fria'
 import { Deadlines } from '@/src/components/dashboard/deadlines'
 import { Incidents } from '@/src/components/dashboard/incidents'
 import { AuditLog } from '@/src/components/dashboard/audit-log'
@@ -23,6 +26,9 @@ const TABS = [
   { id: 'inventory', label: 'AI Inventory', icon: Server },
   { id: 'scanner', label: 'GitHub Scanner', icon: GitBranch },
   { id: 'tracker', label: 'Compliance Tracker', icon: CheckSquare },
+  { id: 'modules', label: 'Compliance Modules', icon: LayoutGrid },
+  { id: 'fria', label: 'FRIA', icon: Scale },
+  { id: 'gaps', label: 'Gap Analysis', icon: Target },
   { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
   { id: 'calendar', label: 'Deadlines', icon: Calendar },
   { id: 'audit', label: 'Audit Log', icon: ClipboardList },
@@ -214,6 +220,9 @@ function DashboardInner() {
           )}
           {activeTab === 'scanner' && <GitHubScanner systems={systems} />}
           {activeTab === 'tracker' && <ComplianceTracker systems={systems} />}
+          {activeTab === 'modules' && <ModuleStatus systems={systems} />}
+          {activeTab === 'fria' && <FRIA systems={systems} />}
+          {activeTab === 'gaps' && <GapAnalysis systems={systems} />}
           {activeTab === 'incidents' && <Incidents systems={systems} />}
           {activeTab === 'calendar' && (
             <Deadlines calendar={calendar} loading={calendarLoading} onRefresh={loadCalendar} />

@@ -49,10 +49,62 @@ export async function POST(request: Request, { params }: RouteParams) {
         keyArticles: JSON.stringify(result.keyArticles),
         requirements: JSON.stringify(result.requirements),
         recommendations: JSON.stringify(result.recommendations),
-        annexIiiCategory: result.annexIiiCategory,
+        annexIiiCategory: result.annexIiiCategoryName || result.annexIiiCategory,
         complianceGaps: JSON.stringify(result.complianceGaps),
+        rawResponse: JSON.stringify({
+          annexIiiCategory: result.annexIiiCategory,
+          annexIiiCategoryName: result.annexIiiCategoryName,
+          prohibitedPracticeId: result.prohibitedPracticeId,
+          borderlineNotes: result.borderlineNotes,
+        }),
       },
     });
+
+    // Gate: block prohibited AI systems
+    if (result.riskTier === "unacceptable") {
+      await db.aiSystem.update({
+        where: { id: systemId },
+        data: {
+          riskTier: "unacceptable",
+          complianceStatus: "blocked",
+          complianceScore: 0,
+        },
+      });
+
+      await db.auditLog.create({
+        data: {
+          userId: session.user.id,
+          organizationId: session.user.organizationId,
+          aiSystemId: systemId,
+          action: "classify_prohibited",
+          resource: "ai_system",
+          resourceId: systemId,
+          details: JSON.stringify({
+            riskTier: "unacceptable",
+            prohibitedPracticeId: result.prohibitedPracticeId,
+            justification: result.justification,
+          }),
+        },
+      });
+
+      return NextResponse.json({
+        assessment: {
+          id: assessment.id,
+          riskTier: "unacceptable",
+          confidence: result.confidence,
+          justification: result.justification,
+          keyArticles: result.keyArticles,
+          requirements: ["SYSTEM MUST BE WITHDRAWN — Article 5 prohibition applies"],
+          recommendations: result.recommendations,
+          complianceGaps: result.complianceGaps,
+          prohibitedPracticeId: result.prohibitedPracticeId,
+          borderlineNotes: result.borderlineNotes,
+        },
+        blocked: true,
+        message:
+          "This AI system has been classified as using prohibited practices under Article 5 of the EU AI Act. It cannot be placed on the market or put into service in the EU.",
+      });
+    }
 
     // Update system risk tier
     await db.aiSystem.update({
@@ -88,6 +140,10 @@ export async function POST(request: Request, { params }: RouteParams) {
         requirements: result.requirements,
         recommendations: result.recommendations,
         complianceGaps: result.complianceGaps,
+        annexIiiCategory: result.annexIiiCategory,
+        annexIiiCategoryName: result.annexIiiCategoryName,
+        prohibitedPracticeId: result.prohibitedPracticeId,
+        borderlineNotes: result.borderlineNotes,
       },
     });
   } catch (error) {

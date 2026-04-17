@@ -29,6 +29,7 @@ export async function GET() {
       description: s.description,
       sector: s.sector,
       use_case: s.useCase,
+      role: s.role,
       risk_tier: s.riskTier,
       compliance_score: s.complianceScore,
       compliance_status: s.complianceStatus,

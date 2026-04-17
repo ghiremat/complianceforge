@@ -29,6 +29,32 @@ describe("calculateComplianceScore", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it("caps score at zero for unacceptable (Article 5) systems", async () => {
+    findUnique.mockResolvedValue({
+      id: "test-prohibited",
+      riskTier: "unacceptable",
+      incidents: [],
+      documents: [],
+      assessments: [],
+      conformityAssessments: [],
+      complianceDeadlines: [],
+    });
+    update.mockResolvedValue({});
+
+    const result = await calculateComplianceScore("test-prohibited");
+
+    expect(result.score).toBe(0);
+    expect(result.grade).toBe("F");
+    expect(result.criteria).toHaveLength(1);
+    expect(result.criteria[0]?.id).toBe("prohibited_ai_article5");
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "test-prohibited" },
+        data: { complianceScore: 0 },
+      })
+    );
+  });
+
   it("awards points for risk classification", async () => {
     findUnique.mockResolvedValue({
       id: "test-1",

@@ -7,7 +7,10 @@ import { cn, urgencyColor, urgencyBg } from '@/lib/utils'
 import { Skeleton } from '@/src/components/ui/skeleton'
 import type { CalendarItem } from '@/src/types/dashboard'
 
-const BUILTIN_DEADLINE_IDS = new Set(['eu-enforcement', 'gpai-deadline', 'prohibited-deadline'])
+/** Org-created deadlines omit `article`; regulatory milestones from `EU_AI_ACT_TIMELINE` include it. */
+function isCustomDeadline(d: { article?: string }) {
+  return d.article === undefined
+}
 
 export interface DeadlinesProps {
   calendar: CalendarItem[]
@@ -18,10 +21,6 @@ export interface DeadlinesProps {
 const PRIORITIES = ['high', 'medium', 'low'] as const
 const CATEGORIES = ['general', 'regulatory', 'assessment', 'documentation'] as const
 const STATUSES = ['pending', 'completed', 'overdue'] as const
-
-function isCustomDeadline(id: string) {
-  return !BUILTIN_DEADLINE_IDS.has(id)
-}
 
 export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
   const [showAdd, setShowAdd] = useState(false)
@@ -87,7 +86,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
     setEditRow({
       title: d.title,
       description: d.description ?? '',
-      dueDate: d.deadline_date,
+      dueDate: d.dueDate,
       priority: d.priority,
       category: d.category ?? 'general',
       status: d.status,
@@ -248,7 +247,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
       ) : (
         <div className="space-y-3">
           {calendar.map((d) => {
-            const custom = isCustomDeadline(d.id)
+            const custom = isCustomDeadline(d)
             const isEditing = editingId === d.id
 
             return (
@@ -378,7 +377,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                       <h3 className="font-semibold text-white">{d.title}</h3>
                       {d.description && <p className="text-sm text-slate-400 mt-1">{d.description}</p>}
                       <p className="text-xs text-slate-500 mt-2">
-                        Deadline: <span className="text-slate-300">{d.deadline_date}</span>
+                        Deadline: <span className="text-slate-300">{d.dueDate}</span>
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0 flex flex-col items-end gap-2">

@@ -19,6 +19,12 @@ function isApproved(status: string | null | undefined): boolean {
   return normStatus(status) === "approved";
 }
 
+/** FRIA sections use workflow statuses; scoring treats completed like approved. */
+function isFriaSectionApprovedForScore(status: string | null | undefined): boolean {
+  const n = normStatus(status);
+  return n === "approved" || n === "completed";
+}
+
 function countAnnexSubstantive(
   docs: { section: number; content: string | null; status?: string | null }[]
 ): number {
@@ -89,6 +95,25 @@ export async function calculateComplianceScore(systemId: string): Promise<{
     return { score: 0, grade: "F", criteria: [] };
   }
 
+  if (system.riskTier?.toLowerCase() === "unacceptable") {
+    await db.aiSystem.update({
+      where: { id: systemId },
+      data: { complianceScore: 0 },
+    });
+    return {
+      score: 0,
+      grade: "F",
+      criteria: [
+        {
+          id: "prohibited_ai_article5",
+          label: "Prohibited AI system — Article 5 (cannot be placed on the market)",
+          earned: 0,
+          max: 100,
+        },
+      ],
+    };
+  }
+
   const docs: Document[] = system.documents;
   const annexDocs = docs.filter((d: Document) => d.type === "annex_iv");
   const annexDone = countAnnexSubstantive(annexDocs);
@@ -117,8 +142,19 @@ export async function calculateComplianceScore(systemId: string): Promise<{
   const humanMax = 10;
   const humanEarned = docModuleApproved(docs, "human_oversight") ? humanMax : 0;
 
-  const qmsMax = 10;
+  const isHighRisk = system.riskTier?.toLowerCase() === "high";
+  const qmsMax = isHighRisk ? 5 : 10;
   const qmsEarned = docModuleApproved(docs, "quality_management") ? qmsMax : 0;
+
+  const friaMax = 5;
+  const friaTotal = 5;
+  let friaEarned = 0;
+  if (isHighRisk) {
+    const friaDocs = docs.filter(
+      (d) => d.type === "fria" && isFriaSectionApprovedForScore(d.status)
+    ).length;
+    friaEarned = Math.round((friaMax * Math.min(friaDocs, friaTotal)) / friaTotal);
+  }
 
   const postMarketMax = 10;
   const postMarketEarned = docModuleApproved(docs, "post_market") ? postMarketMax : 0;
@@ -155,6 +191,16 @@ export async function calculateComplianceScore(systemId: string): Promise<{
     { id: "data_governance", label: "Data governance (approved)", earned: dataGovEarned, max: dataGovMax },
     { id: "human_oversight", label: "Human oversight (approved)", earned: humanEarned, max: humanMax },
     { id: "quality_management", label: "Quality management (approved)", earned: qmsEarned, max: qmsMax },
+    ...(isHighRisk
+      ? [
+          {
+            id: "fria",
+            label: "FRIA — fundamental rights impact (Article 27, high-risk)",
+            earned: friaEarned,
+            max: friaMax,
+          } satisfies ScoreCriterion,
+        ]
+      : []),
     {
       id: "post_market",
       label: "Post-market monitoring (approved)",
