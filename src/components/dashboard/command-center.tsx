@@ -1,6 +1,7 @@
 'use client'
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { AlertTriangle } from 'lucide-react'
 import { cn, daysUntil } from '@/lib/utils'
 import { EU_AI_ACT_TIMELINE, getUpcomingMilestones } from '@/lib/eu-ai-act'
 import { Skeleton } from '@/src/components/ui/skeleton'
@@ -92,7 +93,8 @@ export function CommandCenter({
           role="alert"
           className="rounded-xl border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-100"
         >
-          ⚠ {prohibitedCount} system(s) classified as prohibited under Article 5. Immediate action required.
+          <AlertTriangle className="inline size-5 mr-1" />
+          {prohibitedCount} system(s) classified as prohibited under Article 5. Immediate action required.
         </div>
       )}
 

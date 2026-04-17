@@ -164,7 +164,7 @@ export function GapAnalysis({ systems }: GapAnalysisProps) {
         <select
           value={selectedSystemId}
           onChange={(e) => setSelectedSystemId(e.target.value)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none"
+          className="w-full cursor-pointer rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none"
         >
           <option value="">Choose a system…</option>
           {systems.map((s) => (
@@ -261,7 +261,7 @@ export function GapAnalysis({ systems }: GapAnalysisProps) {
                     return (
                       <li
                         key={ob.id}
-                        className="flex gap-4 rounded-xl border border-slate-800 bg-slate-900/80 p-4 transition-colors hover:border-slate-700"
+                        className="flex gap-4 rounded-xl border border-slate-800 bg-slate-900/80 p-4 transition-colors duration-200 hover:border-slate-700"
                       >
                         <StatusIcon status={ob.status} />
                         <div className="min-w-0 flex-1 space-y-2">

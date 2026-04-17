@@ -149,7 +149,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
         <button
           type="button"
           onClick={() => setShowAdd((v) => !v)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 transition-colors self-start sm:self-auto"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           {showAdd ? 'Close' : 'Add Deadline'}
@@ -191,7 +191,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
               <select
                 value={newRow.priority}
                 onChange={(e) => setNewRow((r) => ({ ...r, priority: e.target.value }))}
-                className="w-full rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full cursor-pointer rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -205,7 +205,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
               <select
                 value={newRow.category}
                 onChange={(e) => setNewRow((r) => ({ ...r, category: e.target.value }))}
-                className="w-full rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full cursor-pointer rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -219,7 +219,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
             <button
               type="button"
               onClick={() => setShowAdd(false)}
-              className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              className="cursor-pointer rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors duration-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               Cancel
             </button>
@@ -227,7 +227,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
               type="button"
               disabled={adding}
               onClick={() => void addDeadline()}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white"
+              className="cursor-pointer rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {adding ? 'Saving…' : 'Save'}
             </button>
@@ -259,7 +259,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80"
+                        className="cursor-pointer text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         aria-label="Cancel edit"
                       >
                         <X className="w-4 h-4" />
@@ -297,7 +297,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                         <select
                           value={editRow.priority}
                           onChange={(e) => setEditRow((r) => ({ ...r, priority: e.target.value }))}
-                          className="w-full rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full cursor-pointer rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           {PRIORITIES.map((p) => (
                             <option key={p} value={p}>
@@ -311,7 +311,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                         <select
                           value={editRow.category}
                           onChange={(e) => setEditRow((r) => ({ ...r, category: e.target.value }))}
-                          className="w-full rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full cursor-pointer rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           {CATEGORIES.map((c) => (
                             <option key={c} value={c}>
@@ -325,7 +325,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                         <select
                           value={editRow.status}
                           onChange={(e) => setEditRow((r) => ({ ...r, status: e.target.value }))}
-                          className="w-full rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full cursor-pointer rounded-lg border border-slate-700 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           {STATUSES.map((s) => (
                             <option key={s} value={s}>
@@ -339,14 +339,14 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+                        className="cursor-pointer rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors duration-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={() => void saveEdit(d.id)}
-                        className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white"
+                        className="cursor-pointer rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       >
                         Save changes
                       </button>
@@ -392,7 +392,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                           <button
                             type="button"
                             onClick={() => startEdit(d)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs text-slate-200 transition-colors duration-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                             Edit
@@ -401,7 +401,7 @@ export function Deadlines({ calendar, loading, onRefresh }: DeadlinesProps) {
                             type="button"
                             disabled={deletingId === d.id}
                             onClick={() => void deleteDeadline(d.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-red-900/60 bg-red-950/40 px-2 py-1 text-xs text-red-200 hover:bg-red-950/70 disabled:opacity-50"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-900/60 bg-red-950/40 px-2 py-1 text-xs text-red-200 transition-colors duration-200 hover:bg-red-950/70 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             {deletingId === d.id ? '…' : 'Delete'}

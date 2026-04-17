@@ -37,7 +37,10 @@ export default async function Home() {
 
       <div className="relative z-10">
         <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex cursor-pointer items-center gap-3 rounded-lg outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
+          >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 shadow-lg shadow-indigo-950/50">
               <Shield className="h-5 w-5 text-white" aria-hidden />
             </div>
@@ -53,19 +56,19 @@ export default async function Home() {
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden text-slate-400 transition-colors hover:text-white sm:inline"
+              className="hidden cursor-pointer rounded-lg text-slate-400 outline-none transition-colors duration-200 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] sm:inline"
             >
               GitHub
             </a>
             <Link
               href="/sign-in"
-              className="rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2 font-medium text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800 sm:px-4"
+              className="cursor-pointer rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2 font-medium text-slate-200 outline-none transition-colors duration-200 hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] sm:px-4"
             >
               Sign In
             </Link>
             <Link
               href="/sign-up"
-              className="rounded-lg bg-indigo-600 px-3 py-2 font-semibold text-white shadow-md shadow-indigo-950/40 transition-colors hover:bg-indigo-500 sm:px-4"
+              className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-2 font-semibold text-white shadow-md shadow-indigo-950/40 outline-none transition-colors duration-200 hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] sm:px-4"
             >
               Sign Up
             </Link>
@@ -111,17 +114,17 @@ export default async function Home() {
               <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-950/50 transition-colors hover:bg-indigo-500"
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-950/50 outline-none transition-colors duration-200 hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                 >
                   Get Started Free
                   <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
-                <a
-                  href="#features"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/60 px-6 py-3.5 text-base font-semibold text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800"
+                <Link
+                  href="/#features"
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/60 px-6 py-3.5 text-base font-semibold text-slate-200 outline-none transition-colors duration-200 hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                 >
                   View Demo
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -202,7 +205,7 @@ export default async function Home() {
                 ].map(({ icon: Icon, title, body }) => (
                   <li
                     key={title}
-                    className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20 transition-colors hover:border-slate-700"
+                    className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20 transition-colors duration-200 hover:border-slate-700"
                   >
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600/20 text-indigo-400">
                       <Icon className="h-5 w-5" aria-hidden />
@@ -267,7 +270,7 @@ export default async function Home() {
               </p>
               <Link
                 href="/sign-up"
-                className="mt-8 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-indigo-950/40 transition-colors hover:bg-indigo-500"
+                className="mt-8 inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-indigo-950/40 outline-none transition-colors duration-200 hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
               >
                 Create Free Account
                 <ArrowRight className="h-5 w-5" aria-hidden />
@@ -291,7 +294,7 @@ export default async function Home() {
                 href={GITHUB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-white"
+                className="cursor-pointer rounded outline-none transition-colors duration-200 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
               >
                 GitHub
               </a>
@@ -299,11 +302,14 @@ export default async function Home() {
                 href={DOCS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-white"
+                className="cursor-pointer rounded outline-none transition-colors duration-200 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
               >
                 Documentation
               </a>
-              <Link href="/sign-in" className="transition-colors hover:text-white">
+              <Link
+                href="/sign-in"
+                className="cursor-pointer rounded outline-none transition-colors duration-200 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
+              >
                 Sign In
               </Link>
             </nav>

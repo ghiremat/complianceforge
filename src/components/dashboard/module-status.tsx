@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import {
   Shield,
   AlertTriangle,
@@ -151,6 +152,24 @@ const ICONS: Record<string, LucideIcon> = {
   Scale,
 }
 
+/** Dashboard tab to open for each compliance module (see `TABS` in `app/dashboard/page.tsx`) */
+const MODULE_TO_TAB: Record<string, string> = {
+  classification: 'inventory',
+  'risk-mgmt': 'tracker',
+  'data-gov': 'tracker',
+  'tech-doc': 'tracker',
+  logging: 'tracker',
+  transparency: 'tracker',
+  oversight: 'tracker',
+  accuracy: 'scanner',
+  qms: 'tracker',
+  conformity: 'tracker',
+  registration: 'settings',
+  pms: 'tracker',
+  incidents: 'incidents',
+  fria: 'fria',
+}
+
 /** Maps UI module id to obligation ids returned by `/api/systems/[id]/obligations` */
 const MODULE_TO_OBLIGATION_IDS: Record<string, string[]> = {
   classification: [],
@@ -292,7 +311,7 @@ export function ModuleStatus({ systems }: ModuleStatusProps) {
           </div>
           <div className="w-full sm:max-w-xs">
             <Select value={selectedId || undefined} onValueChange={setSelectedId}>
-              <SelectTrigger className="border-slate-700 bg-[#0a0a0f] text-slate-200">
+              <SelectTrigger className="cursor-pointer border-slate-700 bg-[#0a0a0f] text-slate-200">
                 <SelectValue placeholder="Select a system" />
               </SelectTrigger>
               <SelectContent className="border-slate-800 bg-slate-900">
@@ -315,12 +334,14 @@ export function ModuleStatus({ systems }: ModuleStatusProps) {
         {moduleStatuses.map((mod) => {
           const Icon = ICONS[mod.icon] ?? Shield
           const showSkeleton = loading && !!selectedId
+          const tab = MODULE_TO_TAB[mod.id] ?? 'tracker'
           return (
-            <div
+            <Link
               key={mod.id}
+              href={`/dashboard?tab=${tab}`}
               className={cn(
-                'flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors',
-                selectedId && 'hover:border-indigo-800/60'
+                'flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors duration-200',
+                'cursor-pointer hover:border-indigo-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500'
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -340,7 +361,7 @@ export function ModuleStatus({ systems }: ModuleStatusProps) {
                 )}
               </div>
               <p className="text-xs text-slate-500 leading-snug">{mod.description}</p>
-            </div>
+            </Link>
           )
         })}
       </div>

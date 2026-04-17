@@ -135,7 +135,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
                 setSelectedSystemId(id)
                 setExpandedItem(null)
               }}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full cursor-pointer bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
             >
               <option value="">Choose a system...</option>
               {systems.map((s) => (
@@ -159,7 +159,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
             </div>
             <div className="w-full bg-slate-800 rounded-full h-3">
               <div
-                className={cn('h-3 rounded-full transition-all duration-500', scoreBarColor(selectedSystem.compliance_score))}
+                className={cn('h-3 rounded-full transition-all duration-300', scoreBarColor(selectedSystem.compliance_score))}
                 style={{ width: `${selectedSystem.compliance_score}%` }}
               />
             </div>
@@ -174,7 +174,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
               <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
                 <button
                   type="button"
-                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-800/50 transition-colors"
+                  className="w-full flex cursor-pointer items-center gap-3 p-4 text-left hover:bg-slate-800/50 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
                 >
                   <span className="text-xs font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded flex-shrink-0">
@@ -212,7 +212,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
                               [item.id]: { status: e.target.value, evidence: u[item.id]?.evidence ?? '' },
                             }))
                           }
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+                          className="w-full cursor-pointer bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
                         >
                           <option value="compliant">Compliant</option>
                           <option value="in_progress">In Progress</option>
@@ -248,7 +248,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
                       type="button"
                       onClick={() => saveComplianceItem(item.id)}
                       disabled={saving === item.id}
-                      className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
                       {saving === item.id ? 'Saving…' : 'Save'}
                     </button>

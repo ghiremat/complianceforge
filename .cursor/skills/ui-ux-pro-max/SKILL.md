@@ -28,8 +28,8 @@ ComplianceForge is an **enterprise EU AI Act compliance platform**. The UI must 
 
 ### Typography
 
-- **Headings:** System font stack (Inter if available)
-- **Body:** 14-16px, readable line-height (1.5-1.6)
+- **Headings:** Inter (loaded via next/font/google)
+- **Body:** Inter, 14-16px, readable line-height (1.5-1.6)
 - **Data:** Tabular nums for scores and percentages
 - **Code:** Monospace for API keys, system IDs
 
@@ -104,6 +104,12 @@ ComplianceForge is an **enterprise EU AI Act compliance platform**. The UI must 
 - [ ] Hover states provide clear visual feedback
 - [ ] Transitions are smooth (150-300ms)
 - [ ] Focus states visible for keyboard navigation
+- [ ] `focus-visible` styles on interactive elements (not removed or overridden for keyboard users)
+
+### Font
+- Use Inter for all text (loaded via `next/font/google`)
+- Use JetBrains Mono for code/monospace (API keys, system IDs)
+- Never use IBM Plex, Arial, or Times New Roman
 
 ### Responsive
 - [ ] Works at 375px, 768px, 1024px, 1440px

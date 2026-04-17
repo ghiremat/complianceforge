@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowLeft, Clock } from "lucide-react";
 import { daysUntil } from "@/lib/utils";
@@ -136,7 +137,7 @@ export default function SignUpPage() {
                   value={form.name}
                   onChange={(e) => update("name", e.target.value)}
                   placeholder="Jane Müller"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                   autoComplete="name"
                 />
               </div>
@@ -151,7 +152,7 @@ export default function SignUpPage() {
                   value={form.orgName}
                   onChange={(e) => update("orgName", e.target.value)}
                   placeholder="Acme GmbH"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                 />
               </div>
 
@@ -170,7 +171,7 @@ export default function SignUpPage() {
                   autoComplete="email"
                   aria-invalid={Boolean(fieldErrors.email)}
                   aria-describedby={fieldErrors.email ? "email-error" : undefined}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 aria-invalid:border-red-800"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] aria-invalid:border-red-800"
                 />
                 {fieldErrors.email && (
                   <p id="email-error" className="mt-1.5 text-xs text-red-400" role="alert">
@@ -195,7 +196,7 @@ export default function SignUpPage() {
                   autoComplete="new-password"
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={fieldErrors.password ? "password-error" : undefined}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 aria-invalid:border-red-800"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] aria-invalid:border-red-800"
                 />
                 {fieldErrors.password && (
                   <p id="password-error" className="mt-1.5 text-xs text-red-400" role="alert">
@@ -216,7 +217,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 font-semibold text-white transition-colors duration-200 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 font-semibold text-white outline-none transition-colors duration-200 hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -233,13 +234,13 @@ export default function SignUpPage() {
             </form>
 
             <div className="mt-6 border-t border-slate-800 pt-6">
-              <a
+              <Link
                 href="/sign-in"
-                className="flex items-center justify-center gap-2 text-sm font-medium text-indigo-400 transition-colors duration-200 hover:text-indigo-300"
+                className="flex cursor-pointer items-center justify-center gap-2 rounded text-sm font-medium text-indigo-400 outline-none transition-colors duration-200 hover:text-indigo-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
               >
                 <ArrowLeft className="h-4 w-4 shrink-0" />
                 Already have an account? Sign in
-              </a>
+              </Link>
             </div>
 
             <p className="mt-4 text-center text-xs leading-relaxed text-slate-500">

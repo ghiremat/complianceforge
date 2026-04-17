@@ -236,7 +236,7 @@ export function Team() {
           <Button
             type="button"
             onClick={() => setInviteOpen((o) => !o)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white shrink-0"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             <Mail className="w-4 h-4 mr-2" />
             {inviteOpen ? 'Cancel' : 'Invite Member'}
@@ -267,7 +267,7 @@ export function Team() {
             <div className="space-y-2">
               <Label className="text-slate-300">Role</Label>
               <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
+                <SelectTrigger className="cursor-pointer bg-slate-950 border-slate-800 text-white transition-colors duration-200">
                   <SelectValue placeholder="Role" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -284,7 +284,11 @@ export function Team() {
             Invites use link-based onboarding. Share the copied link with your teammate (email delivery is not wired
             yet).
           </p>
-          <Button type="submit" disabled={inviting} className="bg-indigo-600 hover:bg-indigo-500">
+          <Button
+            type="submit"
+            disabled={inviting}
+            className="bg-indigo-600 hover:bg-indigo-500 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
             {inviting ? 'Sending…' : 'Create invitation'}
           </Button>
         </form>
@@ -323,7 +327,7 @@ export function Team() {
                         <Select value={m.role} onValueChange={(role) => void updateRole(m.id, role)}>
                           <SelectTrigger
                             className={cn(
-                              'h-8 w-[120px] border-slate-700 bg-slate-950 text-white text-xs',
+                              'h-8 w-[120px] cursor-pointer border-slate-700 bg-slate-950 text-white text-xs transition-colors duration-200',
                               roleBadgeClass(m.role)
                             )}
                           >
@@ -351,7 +355,7 @@ export function Team() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                            className="text-red-400 transition-colors duration-200 hover:text-red-300 hover:bg-red-950/40 focus-visible:ring-2 focus-visible:ring-indigo-500"
                             onClick={() => setRemoveTarget(m)}
                           >
                             <UserMinus className="w-4 h-4 mr-1" />
@@ -411,7 +415,7 @@ export function Team() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="border-slate-700 text-slate-200 hover:bg-slate-800"
+                            className="border-slate-700 text-slate-200 transition-colors duration-200 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-500"
                             onClick={() => copyInviteLink(inv.token!)}
                           >
                             <Copy className="w-4 h-4 mr-1" />
@@ -422,7 +426,7 @@ export function Team() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 transition-colors duration-200 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-indigo-500"
                           onClick={() => setRevokeTarget(inv)}
                         >
                           Revoke
@@ -448,12 +452,17 @@ export function Team() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" className="text-slate-300" onClick={() => setRemoveTarget(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-slate-300 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500"
+              onClick={() => setRemoveTarget(null)}
+            >
               Cancel
             </Button>
             <Button
               type="button"
-              className="bg-red-600 hover:bg-red-500"
+              className="bg-red-600 transition-colors duration-200 hover:bg-red-500 focus-visible:ring-2 focus-visible:ring-indigo-500"
               disabled={removing}
               onClick={() => void confirmRemove()}
             >
@@ -472,12 +481,17 @@ export function Team() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" className="text-slate-300" onClick={() => setRevokeTarget(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-slate-300 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500"
+              onClick={() => setRevokeTarget(null)}
+            >
               Cancel
             </Button>
             <Button
               type="button"
-              className="bg-red-600 hover:bg-red-500"
+              className="bg-red-600 transition-colors duration-200 hover:bg-red-500 focus-visible:ring-2 focus-visible:ring-indigo-500"
               disabled={revoking}
               onClick={() => void confirmRevoke()}
             >

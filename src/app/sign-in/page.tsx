@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -84,7 +85,7 @@ function SignInForm() {
               href="https://github.com/gengirish/complianceforge"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 transition-colors duration-200 hover:text-white"
+              className="flex cursor-pointer items-center gap-1 rounded outline-none transition-colors duration-200 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
             >
               <GitBranch className="h-4 w-4" /> GitHub
             </a>
@@ -162,7 +163,7 @@ function SignInForm() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@company.eu"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                       required
                       autoComplete="email"
                     />
@@ -177,7 +178,7 @@ function SignInForm() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-500 transition-colors duration-200 outline-none focus:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                       required
                       autoComplete="current-password"
                     />
@@ -195,7 +196,7 @@ function SignInForm() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 font-semibold text-white transition-all duration-200 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 font-semibold text-white outline-none transition-all duration-200 hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {loading ? (
                       <>
@@ -214,12 +215,12 @@ function SignInForm() {
                 <div className="mt-6 border-t border-slate-800 pt-6 text-center">
                   <p className="text-sm text-slate-400">
                     Don&apos;t have an account?{" "}
-                    <a
+                    <Link
                       href="/sign-up"
-                      className="font-medium text-indigo-400 transition-colors duration-200 hover:text-indigo-300"
+                      className="cursor-pointer rounded font-medium text-indigo-400 outline-none transition-colors duration-200 hover:text-indigo-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                     >
                       Create one
-                    </a>
+                    </Link>
                   </p>
                   <p className="mt-3 text-xs text-slate-500">
                     EU AI Act enforcement:{" "}
