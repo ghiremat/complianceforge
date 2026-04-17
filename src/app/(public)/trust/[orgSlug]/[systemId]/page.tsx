@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
 import { getScoreGrade, getScoreStyle } from "@/lib/compliance-scoring";
+import { ExplainabilityEvidence } from "@/src/components/passport/ExplainabilityEvidence";
 
 const MIN_SECTION_CONTENT_LEN = 80;
 
@@ -279,6 +280,8 @@ export default async function TrustPassportPage({ params }: PageProps) {
               </div>
             </dl>
           </section>
+
+          <ExplainabilityEvidence systemId={systemId} />
 
           <p className="rounded-xl border border-gray-800/80 bg-gray-900/40 px-5 py-4 text-center text-xs leading-relaxed text-gray-500">
             Information is published voluntarily by the organization via ComplianceForge. This page is

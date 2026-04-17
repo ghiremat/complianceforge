@@ -1,0 +1,14 @@
+# complianceforge.yml — Drop this in your project root to configure ComplianceForge.
+version: "1"
+
+system:
+  name: "My AI System"
+  risk_tier: high
+
+inference_audit:
+  enabled: true
+  sample_rate: 0.10          # trace 10% of inferences in production
+  model: "gemma-2-2b"        # gemma-2-2b or llama-3.2-1b
+  threshold_alert: 0.70      # alert in CI if confidence drops below 70%
+  export_format: pdf
+  # webhook: https://your-system.com/hooks/trace-alert
