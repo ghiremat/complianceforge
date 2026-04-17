@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcryptjs";
+import { withRateLimit } from "@/lib/api-middleware";
 import { db } from "@/server/db";
 
 declare module "next-auth" {
@@ -33,7 +34,12 @@ declare module "@auth/core/jwt" {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
-  session: { strategy: "jwt" },
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
+  session: {
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60,
+  },
   pages: {
     signIn: "/sign-in",
     newUser: "/dashboard",
@@ -50,6 +56,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = (credentials.email as string).trim().toLowerCase();
         const password = credentials.password as string;
+
+        const { limited } = withRateLimit(`signin:${email}`, 5, 15 * 60 * 1000);
+        if (limited) {
+          throw new Error(
+            "Too many sign-in attempts. Please try again later."
+          );
+        }
 
         const user = await db.user.findUnique({
           where: { email },

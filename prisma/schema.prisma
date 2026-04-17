@@ -4,6 +4,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
+  // For Neon/serverless poolers: configure DATABASE_URL with `?pgbouncer=true` (or `?pooler=true`)
+  // and an appropriate connection limit in production; do not hardcode secrets here.
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -55,6 +57,8 @@ model User {
   sentInvitations      Invitation[]          @relation("InvitedBy")
   accounts             Account[]
   sessions             Session[]
+
+  @@index([organizationId])
 }
 
 // ─── NextAuth Models ────────────────────────────────────────────────────────
@@ -128,6 +132,9 @@ model AiSystem {
   conformityAssessments ConformityAssessment[]
   passportConfig        PassportConfig?
   aiBoms                AiBom[]
+
+  @@index([organizationId])
+  @@index([organizationId, riskTier])
 }
 
 model Assessment {
@@ -149,6 +156,8 @@ model Assessment {
 
   aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
   assessor User     @relation(fields: [assessorId], references: [id])
+
+  @@index([aiSystemId, createdAt])
 }
 
 model Document {
@@ -166,6 +175,9 @@ model Document {
 
   aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
   author   User     @relation(fields: [authorId], references: [id])
+
+  @@index([aiSystemId, type])
+  @@index([aiSystemId, type, section])
 }
 
 model Incident {
@@ -187,6 +199,9 @@ model Incident {
 
   aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
   reporter User     @relation(fields: [reporterId], references: [id])
+
+  @@index([aiSystemId, status])
+  @@index([aiSystemId])
 }
 
 model AuditLog {
@@ -203,6 +218,9 @@ model AuditLog {
   user         User?         @relation(fields: [userId], references: [id])
   organization Organization  @relation(fields: [organizationId], references: [id])
   aiSystem     AiSystem?     @relation(fields: [aiSystemId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([userId])
 }
 
 // ─── GitHub Scanner ─────────────────────────────────────────────────────────
@@ -222,6 +240,8 @@ model ScanResult {
 
   scannedBy User      @relation(fields: [scannedById], references: [id])
   aiSystem  AiSystem? @relation(fields: [aiSystemId], references: [id])
+
+  @@index([aiSystemId, scanDate])
 }
 
 // ─── Compliance Calendar ────────────────────────────────────────────────────
@@ -244,6 +264,8 @@ model ComplianceDeadline {
   aiSystem     AiSystem?    @relation(fields: [aiSystemId], references: [id], onDelete: SetNull)
   assignee     User?        @relation("DeadlineAssignee", fields: [assigneeId], references: [id])
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, dueDate])
 }
 
 // ─── Conformity Assessment ──────────────────────────────────────────────────
@@ -263,6 +285,8 @@ model ConformityAssessment {
 
   aiSystem AiSystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
   assessor User     @relation(fields: [assessorId], references: [id])
+
+  @@index([aiSystemId])
 }
 
 // ─── API Keys ───────────────────────────────────────────────────────────────
@@ -278,6 +302,9 @@ model ApiKey {
   createdAt      DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([keyPrefix])
+  @@index([organizationId])
 }
 
 // ─── Team Invitations ───────────────────────────────────────────────────────
@@ -295,6 +322,9 @@ model Invitation {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invitedBy    User         @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@index([organizationId])
+  @@index([token])
 }
 
 // ─── GitHub App Installations (CI/CD Integration) ───────────────────────────

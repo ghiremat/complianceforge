@@ -83,7 +83,8 @@ export function Incidents({ systems }: IncidentsProps) {
         setRows([])
         return
       }
-      setRows((await r.json()) as IncidentRow[])
+      const data = (await r.json()) as IncidentRow[] | { incidents?: IncidentRow[] }
+      setRows(Array.isArray(data) ? data : data.incidents ?? [])
     } catch {
       toast.error('Failed to load incidents')
       setRows([])
@@ -116,7 +117,7 @@ export function Incidents({ systems }: IncidentsProps) {
           title: form.title.trim(),
           description: form.description.trim() || undefined,
           severity: form.severity,
-          systemId: form.systemId,
+          aiSystemId: form.systemId,
         }),
       })
       if (r.ok) {

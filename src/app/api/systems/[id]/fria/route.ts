@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { badRequest, notFound, serverError, unauthorized } from "@/lib/api-errors";
 import { db } from "@/server/db";
 
 export const maxDuration = 30;
@@ -67,105 +68,122 @@ const FRIA_SECTIONS: FriaSection[] = [
 ];
 
 export async function GET(_request: Request, { params }: RouteParams) {
-  const session = await auth();
-  if (!session?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return unauthorized();
+    }
+
+    const { id: systemId } = await params;
+    const system = await db.aiSystem.findFirst({
+      where: { id: systemId, organizationId: session.user.organizationId },
+    });
+    if (!system) {
+      return notFound("System");
+    }
+
+    const docs = await db.document.findMany({
+      where: { aiSystemId: systemId, type: "fria" },
+      orderBy: { section: "asc" },
+    });
+
+    const sections = FRIA_SECTIONS.map((s, i) => {
+      const doc = docs.find((d) => d.section === i + 1);
+      return {
+        ...s,
+        sectionNumber: i + 1,
+        status: doc?.status || "not_started",
+        content: doc?.content || "",
+        updatedAt: doc?.updatedAt || null,
+      };
+    });
+
+    return NextResponse.json({
+      systemId,
+      systemName: system.name,
+      riskTier: system.riskTier,
+      role: system.role,
+      required: system.riskTier?.toLowerCase() === "high",
+      sections,
+      template: FRIA_SECTIONS,
+    });
+  } catch (e) {
+    console.error(e);
+    return serverError();
   }
-
-  const { id: systemId } = await params;
-  const system = await db.aiSystem.findFirst({
-    where: { id: systemId, organizationId: session.user.organizationId },
-  });
-  if (!system) {
-    return NextResponse.json({ error: "System not found" }, { status: 404 });
-  }
-
-  const docs = await db.document.findMany({
-    where: { aiSystemId: systemId, type: "fria" },
-    orderBy: { section: "asc" },
-  });
-
-  const sections = FRIA_SECTIONS.map((s, i) => {
-    const doc = docs.find((d) => d.section === i + 1);
-    return {
-      ...s,
-      sectionNumber: i + 1,
-      status: doc?.status || "not_started",
-      content: doc?.content || "",
-      updatedAt: doc?.updatedAt || null,
-    };
-  });
-
-  return NextResponse.json({
-    systemId,
-    systemName: system.name,
-    riskTier: system.riskTier,
-    role: system.role,
-    required: system.riskTier?.toLowerCase() === "high",
-    sections,
-    template: FRIA_SECTIONS,
-  });
 }
 
 export async function POST(request: Request, { params }: RouteParams) {
-  const session = await auth();
-  if (!session?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return unauthorized();
+    }
 
-  const { id: systemId } = await params;
-  const system = await db.aiSystem.findFirst({
-    where: { id: systemId, organizationId: session.user.organizationId },
-  });
-  if (!system) {
-    return NextResponse.json({ error: "System not found" }, { status: 404 });
-  }
-
-  const body = (await request.json()) as {
-    sectionNumber: number;
-    content: string;
-    status: string;
-  };
-
-  if (!body.sectionNumber || body.sectionNumber < 1 || body.sectionNumber > FRIA_SECTIONS.length) {
-    return NextResponse.json({ error: "Invalid section" }, { status: 400 });
-  }
-
-  const section = FRIA_SECTIONS[body.sectionNumber - 1];
-  const existing = await db.document.findFirst({
-    where: { aiSystemId: systemId, type: "fria", section: body.sectionNumber },
-  });
-
-  if (existing) {
-    await db.document.update({
-      where: { id: existing.id },
-      data: { content: body.content, status: body.status },
+    const { id: systemId } = await params;
+    const system = await db.aiSystem.findFirst({
+      where: { id: systemId, organizationId: session.user.organizationId },
     });
-  } else {
-    await db.document.create({
+    if (!system) {
+      return notFound("System");
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return badRequest("Invalid JSON body");
+    }
+
+    const b = body as {
+      sectionNumber: number;
+      content: string;
+      status: string;
+    };
+
+    if (!b.sectionNumber || b.sectionNumber < 1 || b.sectionNumber > FRIA_SECTIONS.length) {
+      return badRequest("Invalid section");
+    }
+
+    const section = FRIA_SECTIONS[b.sectionNumber - 1];
+    const existing = await db.document.findFirst({
+      where: { aiSystemId: systemId, type: "fria", section: b.sectionNumber },
+    });
+
+    if (existing) {
+      await db.document.update({
+        where: { id: existing.id },
+        data: { content: b.content, status: b.status },
+      });
+    } else {
+      await db.document.create({
+        data: {
+          aiSystemId: systemId,
+          authorId: session.user.id,
+          title: section.title,
+          type: "fria",
+          section: b.sectionNumber,
+          content: b.content,
+          status: b.status,
+        },
+      });
+    }
+
+    await db.auditLog.create({
       data: {
+        userId: session.user.id,
+        organizationId: session.user.organizationId,
         aiSystemId: systemId,
-        authorId: session.user.id,
-        title: section.title,
-        type: "fria",
-        section: body.sectionNumber,
-        content: body.content,
-        status: body.status,
+        action: "update_fria",
+        resource: "document",
+        resourceId: systemId,
+        details: JSON.stringify({ section: section.title, status: b.status }),
       },
     });
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    return serverError();
   }
-
-  await db.auditLog.create({
-    data: {
-      userId: session.user.id,
-      organizationId: session.user.organizationId,
-      aiSystemId: systemId,
-      action: "update_fria",
-      resource: "document",
-      resourceId: systemId,
-      details: JSON.stringify({ section: section.title, status: body.status }),
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }

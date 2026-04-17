@@ -80,7 +80,11 @@ function DashboardInner() {
   const loadSystems = useCallback(async () => {
     try {
       const r = await fetch('/api/systems')
-      if (r.ok) setSystems(await r.json())
+      if (r.ok) {
+        const data = (await r.json()) as SystemData[] | { systems?: SystemData[] }
+        const list = Array.isArray(data) ? data : data.systems ?? []
+        setSystems(list)
+      }
     } catch { /* handled by empty array */ } finally {
       setSystemsLoading(false)
     }

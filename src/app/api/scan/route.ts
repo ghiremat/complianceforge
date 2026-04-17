@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
+import {
+  badRequest,
+  notFound,
+  serverError,
+  unauthorized,
+  validationError,
+} from "@/lib/api-errors";
+import { logger } from "@/lib/logger";
 import { db } from "@/server/db";
 import { scanRepositoryWithAI } from "@/lib/ai-provider";
 import {
@@ -44,7 +52,9 @@ const MODEL_EXTENSIONS = new Set([
   ".ggml",
 ]);
 
-function parseGithubRepoUrl(urlStr: string): { owner: string; repo: string } | null {
+function parseGithubRepoUrl(
+  urlStr: string,
+): { owner: string; repo: string } | null {
   try {
     const u = new URL(urlStr.trim());
     const host = u.hostname.replace(/^www\./, "");
@@ -60,14 +70,23 @@ function parseGithubRepoUrl(urlStr: string): { owner: string; repo: string } | n
 }
 
 async function githubJson<T>(url: string): Promise<{ ok: boolean; data: T }> {
-  const res = await fetch(url, { headers: GH_HEADERS, next: { revalidate: 0 } });
+  const res = await fetch(url, {
+    headers: GH_HEADERS,
+    next: { revalidate: 0 },
+  });
   const data = (await res.json()) as T;
   return { ok: res.ok, data };
 }
 
-async function fetchRepoDefaultBranch(owner: string, repo: string): Promise<string | null> {
+async function fetchRepoDefaultBranch(
+  owner: string,
+  repo: string,
+): Promise<string | null> {
   const url = `https://api.github.com/repos/${owner}/${repo}`;
-  const { ok, data } = await githubJson<{ default_branch?: string; message?: string }>(url);
+  const { ok, data } = await githubJson<{
+    default_branch?: string;
+    message?: string;
+  }>(url);
   if (!ok || !data.default_branch) return null;
   return data.default_branch;
 }
@@ -76,7 +95,7 @@ async function fetchFileContent(
   owner: string,
   repo: string,
   path: string,
-  ref: string
+  ref: string,
 ): Promise<string | null> {
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(ref)}`;
   const { ok, data } = await githubJson<{
@@ -85,7 +104,8 @@ async function fetchFileContent(
     encoding?: string;
     message?: string;
   }>(url);
-  if (!ok || data.type !== "file" || typeof data.content !== "string") return null;
+  if (!ok || data.type !== "file" || typeof data.content !== "string")
+    return null;
   const buf = Buffer.from(data.content.replace(/\n/g, ""), "base64");
   return buf.toString("utf-8");
 }
@@ -100,7 +120,9 @@ function collectNpmDepNames(pkg: {
   ];
 }
 
-function matchNpmAiPackage(dep: string): (typeof NPM_AI_PACKAGES)[number] | null {
+function matchNpmAiPackage(
+  dep: string,
+): (typeof NPM_AI_PACKAGES)[number] | null {
   const d = dep.toLowerCase();
   for (const pkg of NPM_AI_PACKAGES) {
     const p = pkg.toLowerCase();
@@ -120,7 +142,9 @@ function extractRequirementsNames(content: string): string[] {
   return names;
 }
 
-function matchPythonAiPackage(rawName: string): (typeof PYTHON_AI_PACKAGES)[number] | null {
+function matchPythonAiPackage(
+  rawName: string,
+): (typeof PYTHON_AI_PACKAGES)[number] | null {
   const key = rawName.trim().toLowerCase().replace(/_/g, "-");
   const aliases: Record<string, string> = {
     "scikit-learn": "sklearn",
@@ -133,7 +157,9 @@ function matchPythonAiPackage(rawName: string): (typeof PYTHON_AI_PACKAGES)[numb
   return null;
 }
 
-function findPyProjectAiPackages(content: string): (typeof PYTHON_AI_PACKAGES)[number][] {
+function findPyProjectAiPackages(
+  content: string,
+): (typeof PYTHON_AI_PACKAGES)[number][] {
   const found = new Set<(typeof PYTHON_AI_PACKAGES)[number]>();
   const lower = content.toLowerCase();
   for (const pkg of PYTHON_AI_PACKAGES) {
@@ -141,9 +167,10 @@ function findPyProjectAiPackages(content: string): (typeof PYTHON_AI_PACKAGES)[n
     if (
       lower.includes(`"${p}"`) ||
       lower.includes(`'${p}'`) ||
-      new RegExp(`(^|[\\s,\\[])${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[\\s=\\[<>!~,])`, "m").test(
-        content
-      )
+      new RegExp(
+        `(^|[\\s,\\[])${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[\\s=\\[<>!~,])`,
+        "m",
+      ).test(content)
     ) {
       found.add(pkg);
     }
@@ -154,7 +181,7 @@ function findPyProjectAiPackages(content: string): (typeof PYTHON_AI_PACKAGES)[n
 async function listRepoModelPaths(
   owner: string,
   repo: string,
-  branch: string
+  branch: string,
 ): Promise<string[]> {
   const commitUrl = `https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(branch)}`;
   const { ok, data: commitData } = await githubJson<{
@@ -232,148 +259,150 @@ function buildFindings(args: {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  let rawBody: unknown;
   try {
-    rawBody = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  const validated = scanSchema.safeParse(rawBody);
-  if (!validated.success) {
-    return NextResponse.json(
-      { error: "Validation failed", details: validated.error.flatten().fieldErrors },
-      { status: 400 }
-    );
-  }
-
-  const repoUrl = validated.data.repoUrl.trim();
-  const parsedRepo = parseGithubRepoUrl(repoUrl);
-  if (!parsedRepo) {
-    return NextResponse.json(
-      { error: "Invalid GitHub repository URL (expected https://github.com/owner/repo)" },
-      { status: 400 }
-    );
-  }
-
-  const { owner, repo } = parsedRepo;
-  const systemId = validated.data.systemId?.trim() || undefined;
-
-  if (systemId) {
-    const sys = await db.aiSystem.findFirst({
-      where: { id: systemId, organizationId: session.user.organizationId },
-    });
-    if (!sys) {
-      return NextResponse.json({ error: "System not found" }, { status: 404 });
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return unauthorized();
     }
-  }
 
-  const branch = (await fetchRepoDefaultBranch(owner, repo)) ?? "main";
-
-  const [packageJsonRaw, requirementsRaw, pyprojectRaw, modelPaths] = await Promise.all([
-    fetchFileContent(owner, repo, "package.json", branch),
-    fetchFileContent(owner, repo, "requirements.txt", branch),
-    fetchFileContent(owner, repo, "pyproject.toml", branch),
-    listRepoModelPaths(owner, repo, branch),
-  ]);
-
-  const npmHits: (typeof NPM_AI_PACKAGES)[number][] = [];
-  if (packageJsonRaw) {
+    let rawBody: unknown;
     try {
-      const pkg = JSON.parse(packageJsonRaw) as {
-        dependencies?: Record<string, string>;
-        devDependencies?: Record<string, string>;
-      };
-      const deps = collectNpmDepNames(pkg);
-      const seen = new Set<string>();
-      for (const d of deps) {
-        const hit = matchNpmAiPackage(d);
-        if (hit && !seen.has(hit)) {
-          seen.add(hit);
-          npmHits.push(hit);
-        }
-      }
+      rawBody = await request.json();
     } catch {
-      /* ignore malformed package.json */
+      return badRequest("Invalid JSON body");
     }
-  }
 
-  const pythonPkgFiles = new Map<(typeof PYTHON_AI_PACKAGES)[number], Set<string>>();
-  function addPyFile(pkg: (typeof PYTHON_AI_PACKAGES)[number], file: string) {
-    let set = pythonPkgFiles.get(pkg);
-    if (!set) {
-      set = new Set();
-      pythonPkgFiles.set(pkg, set);
+    const validated = scanSchema.safeParse(rawBody);
+    if (!validated.success) {
+      return validationError(validated.error);
     }
-    set.add(file);
-  }
-  if (requirementsRaw) {
-    for (const n of extractRequirementsNames(requirementsRaw)) {
-      const hit = matchPythonAiPackage(n);
-      if (hit) addPyFile(hit, "requirements.txt");
+
+    const repoUrl = validated.data.repoUrl.trim();
+    const parsedRepo = parseGithubRepoUrl(repoUrl);
+    if (!parsedRepo) {
+      return badRequest(
+        "Invalid GitHub repository URL (expected https://github.com/owner/repo)",
+      );
     }
-  }
-  if (pyprojectRaw) {
-    for (const hit of findPyProjectAiPackages(pyprojectRaw)) {
-      addPyFile(hit, "pyproject.toml");
+
+    const { owner, repo } = parsedRepo;
+    const systemId = validated.data.systemId?.trim() || undefined;
+
+    if (systemId) {
+      const sys = await db.aiSystem.findFirst({
+        where: { id: systemId, organizationId: session.user.organizationId },
+      });
+      if (!sys) {
+        return notFound("System");
+      }
     }
-  }
 
-  const findings = buildFindings({ npmHits, pythonPkgFiles, modelPaths });
-  const totalFindings = findings.length;
-  const reviewRequired = findings.filter((f) => f.confidence < 0.75).length;
+    const branch = (await fetchRepoDefaultBranch(owner, repo)) ?? "main";
 
-  const normalizedRepoUrl = `https://github.com/${owner}/${repo}`;
+    const [packageJsonRaw, requirementsRaw, pyprojectRaw, modelPaths] =
+      await Promise.all([
+        fetchFileContent(owner, repo, "package.json", branch),
+        fetchFileContent(owner, repo, "requirements.txt", branch),
+        fetchFileContent(owner, repo, "pyproject.toml", branch),
+        listRepoModelPaths(owner, repo, branch),
+      ]);
 
-  const aiInput = findings.map((f) => ({
-    name: f.name,
-    framework: f.framework,
-    files: f.files,
-    dependencies: f.dependencies,
-    suggestedRiskTier: f.suggestedRiskTier,
-    confidence: f.confidence,
-  }));
+    const npmHits: (typeof NPM_AI_PACKAGES)[number][] = [];
+    if (packageJsonRaw) {
+      try {
+        const pkg = JSON.parse(packageJsonRaw) as {
+          dependencies?: Record<string, string>;
+          devDependencies?: Record<string, string>;
+        };
+        const deps = collectNpmDepNames(pkg);
+        const seen = new Set<string>();
+        for (const d of deps) {
+          const hit = matchNpmAiPackage(d);
+          if (hit && !seen.has(hit)) {
+            seen.add(hit);
+            npmHits.push(hit);
+          }
+        }
+      } catch {
+        /* ignore malformed package.json */
+      }
+    }
 
-  let aiAnalysis;
-  try {
-    aiAnalysis = await scanRepositoryWithAI(normalizedRepoUrl, aiInput);
+    const pythonPkgFiles = new Map<
+      (typeof PYTHON_AI_PACKAGES)[number],
+      Set<string>
+    >();
+    function addPyFile(pkg: (typeof PYTHON_AI_PACKAGES)[number], file: string) {
+      let set = pythonPkgFiles.get(pkg);
+      if (!set) {
+        set = new Set();
+        pythonPkgFiles.set(pkg, set);
+      }
+      set.add(file);
+    }
+    if (requirementsRaw) {
+      for (const n of extractRequirementsNames(requirementsRaw)) {
+        const hit = matchPythonAiPackage(n);
+        if (hit) addPyFile(hit, "requirements.txt");
+      }
+    }
+    if (pyprojectRaw) {
+      for (const hit of findPyProjectAiPackages(pyprojectRaw)) {
+        addPyFile(hit, "pyproject.toml");
+      }
+    }
+
+    const findings = buildFindings({ npmHits, pythonPkgFiles, modelPaths });
+    const totalFindings = findings.length;
+    const reviewRequired = findings.filter((f) => f.confidence < 0.75).length;
+
+    const normalizedRepoUrl = `https://github.com/${owner}/${repo}`;
+
+    const aiInput = findings.map((f) => ({
+      name: f.name,
+      framework: f.framework,
+      files: f.files,
+      dependencies: f.dependencies,
+      suggestedRiskTier: f.suggestedRiskTier,
+      confidence: f.confidence,
+    }));
+
+    let aiAnalysis;
+    try {
+      aiAnalysis = await scanRepositoryWithAI(normalizedRepoUrl, aiInput);
+    } catch (e) {
+      logger.error("scanRepositoryWithAI error", { err: String(e) });
+      return serverError("AI analysis failed. Please try again.");
+    }
+
+    const findingsJson = JSON.stringify(findings);
+
+    const scanResult = await db.scanResult.create({
+      data: {
+        repository: normalizedRepoUrl,
+        branch,
+        findings: findingsJson,
+        totalFindings,
+        reviewRequired,
+        scannedById: session.user.id,
+        organizationId: session.user.organizationId,
+        aiSystemId: systemId ?? null,
+      },
+    });
+
+    return NextResponse.json({
+      scan: {
+        id: scanResult.id,
+        repository: scanResult.repository,
+        branch: scanResult.branch,
+        totalFindings: scanResult.totalFindings,
+        reviewRequired: scanResult.reviewRequired,
+        findings,
+        aiAnalysis,
+      },
+    });
   } catch (e) {
-    console.error("scanRepositoryWithAI error:", e);
-    return NextResponse.json(
-      { error: "AI analysis failed. Please try again." },
-      { status: 500 }
-    );
+    logger.error("scan POST error", { err: String(e) });
+    return serverError();
   }
-
-  const findingsJson = JSON.stringify(findings);
-
-  const scanResult = await db.scanResult.create({
-    data: {
-      repository: normalizedRepoUrl,
-      branch,
-      findings: findingsJson,
-      totalFindings,
-      reviewRequired,
-      scannedById: session.user.id,
-      organizationId: session.user.organizationId,
-      aiSystemId: systemId ?? null,
-    },
-  });
-
-  return NextResponse.json({
-    scan: {
-      id: scanResult.id,
-      repository: scanResult.repository,
-      branch: scanResult.branch,
-      totalFindings: scanResult.totalFindings,
-      reviewRequired: scanResult.reviewRequired,
-      findings,
-      aiAnalysis,
-    },
-  });
 }

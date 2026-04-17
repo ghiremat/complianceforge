@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/server/db";
+import { logger } from "@/lib/logger";
 import { classifyAiSystem } from "@/lib/ai-provider";
 import { calculateComplianceScore } from "@/lib/compliance-scoring";
 
@@ -148,7 +149,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("Classification error:", message);
+    logger.error("Classification error", { message });
     return NextResponse.json(
       { error: "Classification failed. Please try again.", detail: message },
       { status: 500 }

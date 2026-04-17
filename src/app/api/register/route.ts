@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { z } from "zod";
+import { withRateLimit } from "@/lib/api-middleware";
+import {
+  badRequest,
+  conflict,
+  rateLimited,
+  serverError,
+  validationError,
+} from "@/lib/api-errors";
+import { logger } from "@/lib/logger";
 import { db } from "@/server/db";
 
 const registerSchema = z.object({
@@ -36,14 +45,24 @@ function normalizeRegisterBody(body: unknown): unknown {
 }
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { limited } = withRateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+  if (limited) {
+    return rateLimited("Too many registration attempts. Please try again later.");
+  }
+
+  let body: unknown;
   try {
-    const body = await request.json();
+    body = await request.json();
+  } catch {
+    return badRequest("Invalid JSON body");
+  }
+
+  try {
     const parsed = registerSchema.safeParse(normalizeRegisterBody(body));
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return validationError(parsed.error);
     }
 
     const { email, password, name, organizationName } = parsed.data;
@@ -53,10 +72,7 @@ export async function POST(request: Request) {
       where: { email: normalizedEmail },
     });
     if (existing) {
-      return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
-      );
+      return conflict("An account with this email already exists");
     }
 
     const hashedPassword = await hash(password, 12);
@@ -93,10 +109,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (err) {
-    console.error("Registration error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    logger.error("Registration error", { err: String(err) });
+    return serverError();
   }
 }

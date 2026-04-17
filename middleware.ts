@@ -4,6 +4,10 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
+  const isSystemsListAnonymousGet =
+    req.method === "GET" &&
+    (nextUrl.pathname === "/api/systems" || nextUrl.pathname === "/api/systems/");
+
   const isAuthPage =
     nextUrl.pathname.startsWith("/sign-in") ||
     nextUrl.pathname.startsWith("/sign-up");
@@ -11,12 +15,13 @@ export default auth((req) => {
     nextUrl.pathname === "/" ||
     nextUrl.pathname.startsWith("/trust/") ||
     nextUrl.pathname.startsWith("/api/auth") ||
+    nextUrl.pathname.startsWith("/api/health") ||
     nextUrl.pathname.startsWith("/api/passport") ||
     nextUrl.pathname.startsWith("/api/github/webhook") ||
     nextUrl.pathname.startsWith("/api/register") ||
     nextUrl.pathname.startsWith("/api/v1/");
 
-  if (isPublicPage) return;
+  if (isPublicPage || isSystemsListAnonymousGet) return;
 
   if (isAuthPage) {
     if (isLoggedIn) {

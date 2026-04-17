@@ -107,7 +107,11 @@ export function Team() {
         const err = (await r.json()) as { error?: string }
         throw new Error(err.error ?? 'Failed to load team')
       }
-      const data = (await r.json()) as { members: TeamMember[]; invitations: TeamInvitation[] }
+      const data = (await r.json()) as {
+        members: TeamMember[]
+        invitations: TeamInvitation[]
+        pagination?: { page: number; limit: number; total: number; totalPages: number }
+      }
       setMembers(data.members)
       setInvitations(data.invitations)
     } catch (e) {
@@ -137,14 +141,13 @@ export function Team() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, role: inviteRole }),
       })
-      const data = (await r.json()) as { error?: string; token?: string }
+      const data = (await r.json()) as { error?: string; inviteUrl?: string }
       if (!r.ok) {
         throw new Error(data.error ?? 'Invite failed')
       }
       toast.success('Invitation created')
-      if (data.token) {
-        const url = inviteUrl(data.token)
-        await navigator.clipboard.writeText(url)
+      if (data.inviteUrl) {
+        await navigator.clipboard.writeText(data.inviteUrl)
         toast.info('Invite link copied to clipboard')
       }
       setInviteEmail('')

@@ -1,5 +1,16 @@
 import { Page, expect } from "@playwright/test";
 
+/** Base URL for API tests (matches `playwright.config.ts` use.baseURL). */
+export const BASE =
+  process.env.BASE_URL || `http://127.0.0.1:${process.env.E2E_PORT || "3330"}`;
+
+/** Optional headers for authenticated API requests in E2E. */
+export function apiHeaders(token?: string): Record<string, string> {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
+}
+
 interface TestUser {
   email: string;
   password: string;

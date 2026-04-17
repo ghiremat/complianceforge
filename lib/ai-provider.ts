@@ -3,6 +3,8 @@
  * Both expose OpenAI-compatible chat completion endpoints.
  */
 
+import { logger } from "@/lib/logger";
+
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const NIM_MODEL = "nvidia/llama-3.1-nemotron-ultra-253b-v1";
@@ -202,7 +204,7 @@ async function runWithProviderFallback<T>(
       return await runChatJson<T>(provider, messages, label);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[${label}] ${provider.model} via ${provider.url} failed: ${msg}`);
+      logger.warn(`[${label}] ${provider.model} via ${provider.url} failed: ${msg}`);
       errors.push(`${provider.model}: ${msg}`);
     }
   }

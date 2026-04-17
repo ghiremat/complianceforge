@@ -1,66 +1,111 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/auth";
+import {
+  badRequest,
+  conflict,
+  forbidden,
+  notFound,
+  serverError,
+  unauthorized,
+  validationError,
+} from "@/lib/api-errors";
 import { db } from "@/server/db";
 
+function normalizeOrgSlug(input: string): string {
+  return input.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+}
+
+const updateOrgSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  slug: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/).optional(),
+});
+
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return unauthorized();
+    }
+
+    const org = await db.organization.findUnique({
+      where: { id: session.user.organizationId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        plan: true,
+        maxSystems: true,
+        _count: { select: { aiSystems: true, users: true } },
+      },
+    });
+
+    if (!org) {
+      return notFound("Organization");
+    }
+
+    return NextResponse.json(org);
+  } catch (e) {
+    console.error(e);
+    return serverError();
   }
-
-  const org = await db.organization.findUnique({
-    where: { id: session.user.organizationId },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      plan: true,
-      maxSystems: true,
-      _count: { select: { aiSystems: true, users: true } },
-    },
-  });
-
-  if (!org) {
-    return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-  }
-
-  return NextResponse.json(org);
 }
 
 export async function PATCH(request: Request) {
-  const session = await auth();
-  if (!session?.user?.organizationId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (session.user.role !== "admin") {
-    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  }
-
-  const body = (await request.json()) as { name?: string; slug?: string };
-  const data: Record<string, string> = {};
-
-  if (body.name?.trim()) data.name = body.name.trim();
-  if (body.slug?.trim()) {
-    const slug = body.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
-    if (slug.length < 3) {
-      return NextResponse.json({ error: "Slug must be at least 3 characters" }, { status: 400 });
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return unauthorized();
     }
-    const existing = await db.organization.findUnique({ where: { slug } });
-    if (existing && existing.id !== session.user.organizationId) {
-      return NextResponse.json({ error: "Slug already taken" }, { status: 409 });
+    if (session.user.role !== "admin") {
+      return forbidden("Admin access required");
     }
-    data.slug = slug;
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return badRequest("Invalid JSON body");
+    }
+
+    if (body && typeof body === "object" && !Array.isArray(body)) {
+      const o = body as Record<string, unknown>;
+      if (typeof o.slug === "string") {
+        const n = normalizeOrgSlug(o.slug);
+        o.slug = n === "" ? undefined : n;
+      }
+    }
+
+    const parsed = updateOrgSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(parsed.error);
+    }
+
+    const data: Record<string, string> = {};
+
+    if (parsed.data.name?.trim()) data.name = parsed.data.name.trim();
+    if (parsed.data.slug !== undefined) {
+      const slug = parsed.data.slug;
+      const existing = await db.organization.findUnique({ where: { slug } });
+      if (existing && existing.id !== session.user.organizationId) {
+        return conflict("Slug already taken");
+      }
+      data.slug = slug;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return badRequest("No changes");
+    }
+
+    const updated = await db.organization.update({
+      where: { id: session.user.organizationId },
+      data,
+      select: { id: true, name: true, slug: true },
+    });
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error(e);
+    return serverError();
   }
-
-  if (Object.keys(data).length === 0) {
-    return NextResponse.json({ error: "No changes" }, { status: 400 });
-  }
-
-  const updated = await db.organization.update({
-    where: { id: session.user.organizationId },
-    data,
-    select: { id: true, name: true, slug: true },
-  });
-
-  return NextResponse.json(updated);
 }
