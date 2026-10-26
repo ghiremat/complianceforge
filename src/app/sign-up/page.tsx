@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { HIGH_RISK_ENFORCEMENT_DATE as ENFORCEMENT_DATE, HIGH_RISK_ENFORCEMENT_LABEL } from "@/lib/eu-ai-act";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowLeft, Clock } from "lucide-react";
 import { daysUntil } from "@/lib/utils";
 
-const ENFORCEMENT_DATE = "2026-08-02";
 
 type FieldErrors = Partial<Record<"email" | "password", string>>;
 
@@ -109,7 +109,7 @@ export default function SignUpPage() {
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-red-900 bg-red-950/70 px-3 py-1.5 text-xs font-medium text-red-300">
             <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span>{daysLeft}d to Aug 2, 2026</span>
+            <span>{daysLeft}d to {HIGH_RISK_ENFORCEMENT_LABEL}</span>
           </div>
         </nav>
 

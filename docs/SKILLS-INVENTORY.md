@@ -28,7 +28,7 @@ This repository ships **11** project-specific skills (invoke from Cursor when th
 ### 1.1 AgentMail Integration (`agentmail-integration`)
 **Integration Points for ComplianceForge:**
 - **Compliance Alert Emails**: Notify users when risk classifications change
-- **Deadline Reminder Emails**: EU AI Act milestone notifications (Aug 2, 2026 enforcement)
+- **Deadline Reminder Emails**: EU AI Act milestone notifications (Annex III high-risk obligations apply 2 Dec 2027 under the Digital Omnibus)
 - **Audit Report Delivery**: Email generated compliance reports as PDF attachments
 - **Incident Notification**: Auto-email stakeholders on serious incident detection (Art. 62 — 15-day window)
 - **Verification Emails**: User signup, password reset, 2FA for platform access

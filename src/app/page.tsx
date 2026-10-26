@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HIGH_RISK_ENFORCEMENT_DATE as ENFORCEMENT_DATE, HIGH_RISK_ENFORCEMENT_LABEL } from "@/lib/eu-ai-act";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
@@ -15,7 +16,6 @@ import {
 import { auth } from "@/auth";
 import { cn, daysUntil } from "@/lib/utils";
 
-const ENFORCEMENT_DATE = "2026-08-02";
 const GITHUB_URL = "https://github.com/gengirish/complianceforge";
 const DOCS_URL = `${GITHUB_URL}/blob/main/README.md`;
 
@@ -95,7 +95,7 @@ export default async function Home() {
                 <Lock className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden />
                 <span>
                   <span className="tabular-nums font-semibold text-white">{daysLeft}</span> days until EU
-                  AI Act enforcement (August 2, 2026)
+                  AI Act high-risk obligations apply ({HIGH_RISK_ENFORCEMENT_LABEL})
                 </span>
               </p>
 
@@ -263,7 +263,7 @@ export default async function Home() {
           <section className="border-t border-slate-800 py-16 sm:py-20" aria-labelledby="cta-heading">
             <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
               <h2 id="cta-heading" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                EU AI Act enforcement: August 2, 2026. Start now.
+                EU AI Act high-risk obligations apply {HIGH_RISK_ENFORCEMENT_LABEL}. Start now.
               </h2>
               <p className="mt-4 text-slate-400">
                 Join teams using ComplianceForge as the compliance layer for AI delivery.

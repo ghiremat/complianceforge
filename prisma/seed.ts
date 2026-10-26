@@ -81,23 +81,23 @@ async function main() {
 
   const deadlines = [
     {
-      title: "EU AI Act — Full enforcement",
-      description: "All obligations under the EU AI Act take effect",
-      dueDate: new Date("2026-08-02"),
+      title: "EU AI Act — Annex III high-risk obligations apply",
+      description: "High-risk obligations (Articles 8–15, 26–27, 49, 72–73) apply; deferred from 2 Aug 2026 by the Digital Omnibus",
+      dueDate: new Date("2027-12-02"),
       priority: "high",
       category: "regulatory",
     },
     {
       title: "Register high-risk AI systems",
       description: "All high-risk systems must be registered in the EU database",
-      dueDate: new Date("2026-08-02"),
+      dueDate: new Date("2027-12-02"),
       priority: "high",
       category: "registration",
     },
     {
       title: "Complete Annex IV documentation",
       description: "Technical documentation per Annex IV for all high-risk systems",
-      dueDate: new Date("2026-07-01"),
+      dueDate: new Date("2027-11-01"),
       priority: "high",
       category: "documentation",
     },

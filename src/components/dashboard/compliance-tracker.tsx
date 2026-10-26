@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { CheckSquare, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, scoreColor, scoreBarColor } from '@/lib/utils'
+import { HIGH_RISK_ENFORCEMENT_DATE } from '@/lib/eu-ai-act'
 import type { SystemData } from '@/src/types/dashboard'
 import { ANNEX_IV_SECTIONS } from '@/types'
 
@@ -224,7 +225,7 @@ export function ComplianceTracker({ systems }: ComplianceTrackerProps) {
                         <label className="block text-xs text-slate-400 mb-1">Due Date</label>
                         <input
                           type="date"
-                          defaultValue="2026-08-02"
+                          defaultValue={HIGH_RISK_ENFORCEMENT_DATE}
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
                         />
                       </div>

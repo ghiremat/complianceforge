@@ -1,3 +1,14 @@
+/**
+ * Date the Annex III high-risk obligations start to apply, as amended by the
+ * Digital Omnibus on AI (Regulation (EU) 2026/1744, in force 27 July 2026).
+ * Originally 2 August 2026 under Regulation (EU) 2024/1689.
+ */
+export const HIGH_RISK_ENFORCEMENT_DATE = "2027-12-02";
+export const HIGH_RISK_ENFORCEMENT_LABEL = "December 2, 2027";
+
+/** Annex I (AI in regulated products) was deferred further, to 2 August 2028. */
+export const ANNEX_I_ENFORCEMENT_DATE = "2028-08-02";
+
 export interface RegulatoryMilestone {
   id: string;
   date: string;
@@ -67,16 +78,24 @@ export const EU_AI_ACT_TIMELINE: RegulatoryMilestone[] = ([
     appliesTo: ["all"],
   },
   {
-    id: "high-risk-annex-i",
-    date: "2026-08-02",
-    article: "Article 6(1), Annex I",
-    title: "High-risk AI in regulated products — full obligations",
-    description: "AI systems that are safety components of products covered by Union harmonisation legislation in Annex I must comply with all high-risk requirements (Articles 8–15, 25–27).",
-    appliesTo: ["high-risk", "provider", "deployer"],
+    id: "digital-omnibus",
+    date: "2026-07-27",
+    article: "Regulation (EU) 2026/1744",
+    title: "Digital Omnibus on AI enters into force",
+    description: "Amends the AI Act: Annex III high-risk obligations move from 2 August 2026 to 2 December 2027, Annex I to 2 August 2028. The obligations themselves are unchanged.",
+    appliesTo: ["all"],
+  },
+  {
+    id: "ncii-prohibition-watermarking",
+    date: "2026-12-02",
+    article: "Article 5, Article 50",
+    title: "New Article 5 prohibition; Article 50 watermarking grace period ends",
+    description: "Prohibition on AI systems generating non-consensual intimate imagery or child sexual abuse material applies. Generative systems already on the market must meet Article 50 marking requirements.",
+    appliesTo: ["prohibited", "limited", "provider"],
   },
   {
     id: "high-risk-annex-iii",
-    date: "2026-08-02",
+    date: HIGH_RISK_ENFORCEMENT_DATE,
     article: "Article 6(2), Annex III",
     title: "High-risk stand-alone AI — full obligations",
     description: "Stand-alone high-risk AI systems listed in Annex III must comply with all requirements: risk management (Art. 9), data governance (Art. 10), documentation (Art. 11), record-keeping (Art. 12), transparency (Art. 13), human oversight (Art. 14), accuracy/robustness (Art. 15).",
@@ -84,7 +103,7 @@ export const EU_AI_ACT_TIMELINE: RegulatoryMilestone[] = ([
   },
   {
     id: "deployer-obligations",
-    date: "2026-08-02",
+    date: HIGH_RISK_ENFORCEMENT_DATE,
     article: "Articles 26–27",
     title: "Deployer obligations including FRIA",
     description: "Deployers of high-risk AI must carry out fundamental rights impact assessments (Article 27), ensure human oversight, inform affected persons, and cooperate with authorities.",
@@ -92,7 +111,7 @@ export const EU_AI_ACT_TIMELINE: RegulatoryMilestone[] = ([
   },
   {
     id: "eu-database",
-    date: "2026-08-02",
+    date: HIGH_RISK_ENFORCEMENT_DATE,
     article: "Article 71",
     title: "EU database registration mandatory",
     description: "High-risk AI systems and their providers/deployers must be registered in the EU database before placing on the market.",
@@ -100,7 +119,7 @@ export const EU_AI_ACT_TIMELINE: RegulatoryMilestone[] = ([
   },
   {
     id: "conformity-assessment",
-    date: "2026-08-02",
+    date: HIGH_RISK_ENFORCEMENT_DATE,
     article: "Articles 40–49",
     title: "Conformity assessment required",
     description: "High-risk AI systems must undergo conformity assessment (self-assessment per Annex VI or third-party per Annex VII for biometric systems) before market placement.",
@@ -108,7 +127,7 @@ export const EU_AI_ACT_TIMELINE: RegulatoryMilestone[] = ([
   },
   {
     id: "post-market-monitoring",
-    date: "2026-08-02",
+    date: HIGH_RISK_ENFORCEMENT_DATE,
     article: "Article 72",
     title: "Post-market monitoring systems required",
     description: "Providers of high-risk AI must establish and maintain post-market monitoring systems proportionate to the nature of the AI system.",
@@ -116,11 +135,19 @@ export const EU_AI_ACT_TIMELINE: RegulatoryMilestone[] = ([
   },
   {
     id: "incident-reporting",
-    date: "2026-08-02",
+    date: HIGH_RISK_ENFORCEMENT_DATE,
     article: "Article 73",
     title: "Serious incident reporting obligation",
     description: "Providers must report serious incidents to market surveillance authorities within prescribed timeframes.",
     appliesTo: ["high-risk", "provider"],
+  },
+  {
+    id: "high-risk-annex-i",
+    date: ANNEX_I_ENFORCEMENT_DATE,
+    article: "Article 6(1), Annex I",
+    title: "High-risk AI in regulated products — full obligations",
+    description: "AI systems that are safety components of products covered by Union harmonisation legislation in Annex I must comply with all high-risk requirements (Articles 8–15, 25–27). Deferred to 2028 by the Digital Omnibus.",
+    appliesTo: ["high-risk", "provider", "deployer"],
   },
   {
     id: "existing-high-risk",

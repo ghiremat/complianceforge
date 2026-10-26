@@ -1,13 +1,13 @@
 'use client'
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { HIGH_RISK_ENFORCEMENT_DATE as ENFORCEMENT_DATE, HIGH_RISK_ENFORCEMENT_LABEL } from '@/lib/eu-ai-act'
 import { AlertTriangle } from 'lucide-react'
 import { cn, daysUntil } from '@/lib/utils'
 import { EU_AI_ACT_TIMELINE, getUpcomingMilestones } from '@/lib/eu-ai-act'
 import { Skeleton } from '@/src/components/ui/skeleton'
 import type { CalendarItem, StatsData, SystemData } from '@/src/types/dashboard'
 
-const ENFORCEMENT_DATE = '2026-08-02'
 
 function normalizeTier(tier: string | undefined | null): string {
   const t = (tier ?? '').toLowerCase()
@@ -102,7 +102,7 @@ export function CommandCenter({
         <p className="text-slate-400 text-sm mb-2">EU AI Act Full Enforcement</p>
         <div className="text-7xl font-black text-white mb-1">{daysLeft}</div>
         <p className="text-indigo-400 font-semibold text-lg">days remaining</p>
-        <p className="text-slate-500 text-sm mt-2">August 2, 2026 — Act now to avoid fines up to €35M</p>
+        <p className="text-slate-500 text-sm mt-2">{HIGH_RISK_ENFORCEMENT_LABEL} — Annex III high-risk obligations apply (Digital Omnibus)</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

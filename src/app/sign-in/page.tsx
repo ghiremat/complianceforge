@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { HIGH_RISK_ENFORCEMENT_DATE as ENFORCEMENT_DATE, HIGH_RISK_ENFORCEMENT_LABEL } from "@/lib/eu-ai-act";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,7 +16,6 @@ import {
 } from "lucide-react";
 import { daysUntil } from "@/lib/utils";
 
-const ENFORCEMENT_DATE = "2026-08-02";
 
 const FEATURES = [
   { icon: Shield, label: "EU AI Act risk classification" },
@@ -96,7 +96,7 @@ function SignInForm() {
           <div>
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-red-900 bg-red-950/80 px-4 py-2 text-sm font-medium text-red-300">
               <Clock className="h-4 w-4 shrink-0" />
-              <span>{daysLeft} days until August 2, 2026 enforcement deadline</span>
+              <span>{daysLeft} days until the {HIGH_RISK_ENFORCEMENT_LABEL} high-risk deadline</span>
             </div>
 
             <h1 className="mb-6 text-4xl font-semibold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
@@ -224,7 +224,7 @@ function SignInForm() {
                   </p>
                   <p className="mt-3 text-xs text-slate-500">
                     EU AI Act enforcement:{" "}
-                    <span className="font-semibold text-red-400">August 2, 2026</span>
+                    <span className="font-semibold text-red-400">{HIGH_RISK_ENFORCEMENT_LABEL}</span>
                     {" — "}
                     {daysLeft} days remaining
                   </p>

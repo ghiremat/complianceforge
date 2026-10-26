@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useCallback } from 'react'
+import { HIGH_RISK_ENFORCEMENT_DATE as ENFORCEMENT_DATE } from '@/lib/eu-ai-act'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { Shield, LayoutDashboard, Server, GitBranch, CheckSquare, Calendar, FileText, LogOut, Menu, X, Settings as SettingsIcon, AlertTriangle, ClipboardList, Users, Scale, Target, LayoutGrid } from 'lucide-react'
@@ -20,7 +21,6 @@ import { Reports } from '@/src/components/dashboard/reports'
 import { Settings } from '@/src/components/dashboard/settings'
 import { Team } from '@/src/components/dashboard/team'
 
-const ENFORCEMENT_DATE = '2026-08-02'
 const TABS = [
   { id: 'command', label: 'Command Center', icon: LayoutDashboard },
   { id: 'inventory', label: 'AI Inventory', icon: Server },

@@ -18,7 +18,7 @@
 
 ## Why ComplianceForge
 
-- **EU AI Act enforcement** for many obligations is **August 2, 2026** — the window to build real compliance is closing.
+- **EU AI Act high-risk obligations** (Annex III) apply from **December 2, 2027**, moved from August 2026 by the Digital Omnibus on AI (Regulation (EU) 2026/1744). Annex I systems follow on August 2, 2028. The obligations themselves did not change, and prohibitions, GPAI rules, AI literacy and Article 50 transparency already apply.
 - **Penalties** can reach up to **7% of global annual turnover** or **€35 million** (whichever is higher), depending on the breach and actor category.
 - **Every organization** shipping or operating AI in the EU needs **repeatable** classification, documentation, evidence, and monitoring — not one-off consultant PDFs.
 - **ComplianceForge** automates the heavy lifting: inventory, risk tiering, gaps, evidence, CI checks, and **public trust** surfaces your customers and auditors can actually use.

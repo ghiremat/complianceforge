@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { HIGH_RISK_ENFORCEMENT_DATE as ENFORCEMENT_DATE, HIGH_RISK_ENFORCEMENT_LABEL } from "@/lib/eu-ai-act";
 
-const ENFORCEMENT_DATE = "2026-08-02";
 
 function daysUntilEnforcement(): number {
   const target = new Date(ENFORCEMENT_DATE);
@@ -60,7 +60,7 @@ export function EnforcementCountdown({ variant = "badge", className }: Enforceme
       <div className="text-7xl font-semibold tabular-nums text-foreground mb-1">{daysLeft}</div>
       <p className="text-lg font-semibold text-primary">days remaining</p>
       <p className="text-sm text-muted-foreground mt-2">
-        August 2, 2026 — Act now to avoid fines up to €35M
+        {HIGH_RISK_ENFORCEMENT_LABEL} — Annex III high-risk obligations apply (Digital Omnibus)
       </p>
     </div>
   );
